@@ -7,3 +7,6 @@
 3-1. firstRx 여부 확인하기
 발착신 구분
 발신인 경우 180, 183 구분 후 개수 파악하기
+
+
+pip install pandas
