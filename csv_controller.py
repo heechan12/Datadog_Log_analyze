@@ -5,12 +5,13 @@ from config import SELECTED_COLS_FROM_DF
 
 
 # CSV 파일 불러오기
-def load_csv_file() -> DataFrame :
+def load_data(file) -> DataFrame :
     '''
     csv 파일 불러오기
+    :param file : csv file
     :return: DataFrame(df)
     '''
-    df = pd.read_csv("test/extract-2025-01-23T06_55_50.270Z.csv")
+    df = pd.read_csv(file)
     return df
 
 # 열 정리

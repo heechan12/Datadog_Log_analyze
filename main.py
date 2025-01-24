@@ -3,7 +3,7 @@ import pandas as pd
 from csv_controller import select_columns
 from utils import split_and_convert_iso_datetime
 
-csv = csv_controller.load_csv_file()
+csv = csv_controller.load_data()
 # print(csv.head())
 # print(csv.columns)
 
