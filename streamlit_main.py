@@ -15,6 +15,17 @@ def load_data(file):
     return df
 
 
+def calculate_call_duration(df):
+    start_calls = df[df['Resource Url'].str.contains('/res/ENGINE_startCall', na=False)].groupby('context.callID')[
+        'timestamp'].min()
+    stop_calls = df[df['Resource Url'].str.contains('/res/ENGINE_stopCall', na=False)].groupby('context.callID')[
+        'timestamp'].max()
+
+    call_duration = (stop_calls - start_calls).dt.total_seconds()
+    call_duration = call_duration.fillna('측정 불가')
+    return call_duration
+
+
 def main():
     st.set_page_config(layout="wide")
     st.title("CSV 파일 분석 도구")
@@ -28,10 +39,12 @@ def main():
         st.write("### RTP Timeout 분석")
         capture_callback_count = df[df['context.method'] == 'CaptureCallback'].groupby('context.callID').size()
         first_rx_count = df[df['Resource Url'].str.contains('firstRx', na=False)].groupby('context.callID').size()
+        call_duration = calculate_call_duration(df)
 
         rtp_analysis = pd.DataFrame({
             'CaptureCallback Count': capture_callback_count,
-            'FirstRx Count': first_rx_count
+            'FirstRx Count': first_rx_count,
+            'Call Duration (seconds)': call_duration
         }).fillna('없음')
 
         st.write(rtp_analysis)
