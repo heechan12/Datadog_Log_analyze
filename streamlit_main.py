@@ -7,22 +7,24 @@ import pytz
 def load_data(file):
     df = pd.read_csv(file)
     # UTC 시간을 KST(한국 시간)으로 변환
-    df['timestamp'] = pd.to_datetime(df['timestamp'], format='%Y-%m-%dT%H:%M:%S.%fZ', errors='coerce').dt.tz_localize(
-        'UTC').dt.tz_convert('Asia/Seoul')
-    df['Date'] = pd.to_datetime(df['Date'], format='%Y-%m-%dT%H:%M:%S.%fZ', errors='coerce').dt.tz_localize(
-        'UTC').dt.tz_convert('Asia/Seoul')
+    df['timestamp'] = pd.to_datetime(df['timestamp'], errors='coerce')
+    df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
     df['Resource Url'] = df['Resource Url'].str.replace('https://aicall-lgu.com/', '', regex=False)
+    df['Resource Url'] = df['Resource Url'].str.strip()  # 공백 제거
     return df
 
 
-def calculate_call_duration(df):
-    start_calls = df[df['Resource Url'].str.contains('/res/ENGINE_startCall', na=False)].groupby('context.callID')[
-        'timestamp'].min()
-    stop_calls = df[df['Resource Url'].str.contains('/res/ENGINE_stopCall', na=False)].groupby('context.callID')[
-        'timestamp'].max()
+def get_call_duration(df):
+    df_sorted = df.dropna(subset=['context.callID', 'timestamp']).sort_values(by=['context.callID', 'timestamp'])
 
-    call_duration = (stop_calls - start_calls).dt.total_seconds()
-    call_duration = call_duration.fillna('측정 불가')
+    start_calls = df_sorted[df_sorted['Resource Url'].str.contains('res/ENGINE_startCall', case=False, na=False)]
+    stop_calls = df_sorted[df_sorted['Resource Url'].str.contains('res/ENGINE_stopCall', case=False, na=False)]
+
+    start_times = start_calls.groupby('context.callID')['timestamp'].first()
+    stop_times = stop_calls.groupby('context.callID')['timestamp'].last()
+
+    call_duration = (stop_times - start_times).dt.total_seconds().fillna('측정 불가')
+
     return call_duration
 
 
@@ -39,13 +41,13 @@ def main():
         st.write("### RTP Timeout 분석")
         capture_callback_count = df[df['context.method'] == 'CaptureCallback'].groupby('context.callID').size()
         first_rx_count = df[df['Resource Url'].str.contains('firstRx', na=False)].groupby('context.callID').size()
-        call_duration = calculate_call_duration(df)
+        call_duration = get_call_duration(df)
 
         rtp_analysis = pd.DataFrame({
             'CaptureCallback Count': capture_callback_count,
             'FirstRx Count': first_rx_count,
             'Call Duration (seconds)': call_duration
-        }).fillna('없음')
+        }).fillna('측정 불가')
 
         st.write(rtp_analysis)
 
