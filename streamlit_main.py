@@ -24,6 +24,18 @@ def main():
     if uploaded_file is not None:
         df = load_data(uploaded_file)
 
+        # RTP Timeout 분석
+        st.write("### RTP Timeout 분석")
+        capture_callback_count = df[df['context.method'] == 'CaptureCallback'].groupby('context.callID').size()
+        first_rx_count = df[df['Resource Url'].str.contains('firstRx', na=False)].groupby('context.callID').size()
+
+        rtp_analysis = pd.DataFrame({
+            'CaptureCallback Count': capture_callback_count,
+            'FirstRx Count': first_rx_count
+        }).fillna('없음')
+
+        st.write(rtp_analysis)
+
         # 사이드바에서 원하는 열 선택
         st.sidebar.header("열 선택")
         columns_to_show = st.sidebar.multiselect("보고 싶은 열을 선택하세요", df.columns.tolist(), default=df.columns.tolist())
