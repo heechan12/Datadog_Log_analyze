@@ -28,6 +28,12 @@ def get_call_duration(df):
     return call_duration
 
 
+def get_recent_healthcheck_counts(df):
+    healthcheck_df = df[df['Resource Url'].str.contains('res/ENGINE_ReceiveHealthCheck', case=False, na=False)]
+    recent_counts = healthcheck_df.sort_values(by='timestamp', ascending=False).head(5)['@context.totalCount'].tolist()
+    return recent_counts if recent_counts else ['없음']
+
+
 def main():
     st.set_page_config(layout="wide")
     st.title("CSV 파일 분석 도구")
@@ -42,11 +48,13 @@ def main():
         capture_callback_count = df[df['context.method'] == 'CaptureCallback'].groupby('context.callID').size()
         first_rx_count = df[df['Resource Url'].str.contains('firstRx', na=False)].groupby('context.callID').size()
         call_duration = get_call_duration(df)
+        healthcheck_counts = get_recent_healthcheck_counts(df)
 
         rtp_analysis = pd.DataFrame({
             'CaptureCallback Count': capture_callback_count,
             'FirstRx Count': first_rx_count,
-            'Call Duration (seconds)': call_duration
+            'Call Duration (seconds)': call_duration,
+            'Recent HealthCheck Counts': [healthcheck_counts]
         }).fillna('측정 불가')
 
         st.write(rtp_analysis)
