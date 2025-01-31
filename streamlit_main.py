@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 
 
@@ -31,7 +31,20 @@ def get_call_duration(df):
 def get_recent_healthcheck_counts(df):
     healthcheck_df = df[df['Resource Url'].str.contains('res/ENGINE_ReceiveHealthCheck', case=False, na=False)]
     recent_counts = healthcheck_df.sort_values(by='timestamp', ascending=False).head(5)['@context.totalCount'].tolist()
-    return recent_counts if recent_counts else ['없음']
+    return ', '.join(map(str, recent_counts)) if recent_counts else '없음'
+
+
+def get_srtp_error_count(df):
+    srtp_error_count = df[
+        df['Resource Url'].str.contains('res/ENGINE_errorSrtpDepacketizer', case=False, na=False)].groupby(
+        'context.callID').size()
+    return srtp_error_count
+
+
+def get_bye_reasons(df):
+    bye_reasons = df[df['context.method'] == 'BYE'].groupby('context.callID')['context.reasonFromLog'].first().fillna(
+        '없음')
+    return bye_reasons
 
 
 def main():
@@ -49,12 +62,18 @@ def main():
         first_rx_count = df[df['Resource Url'].str.contains('firstRx', na=False)].groupby('context.callID').size()
         call_duration = get_call_duration(df)
         healthcheck_counts = get_recent_healthcheck_counts(df)
+        healthcheck_series = pd.Series(healthcheck_counts, index=call_duration.index).fillna('없음')
+        srtp_error_count = get_srtp_error_count(df).reindex(call_duration.index).fillna(0)  # SRTP Error 개수
+        bye_reasons = get_bye_reasons(df).reindex(call_duration.index).fillna('없음')  # BYE 이유
 
+        # 모든 열의 길이를 call_duration 기준으로 맞춤
         rtp_analysis = pd.DataFrame({
-            'CaptureCallback Count': capture_callback_count,
-            'FirstRx Count': first_rx_count,
+            'BYE Reason': bye_reasons,
+            'CaptureCallback Count': capture_callback_count.reindex(call_duration.index).fillna('없음'),
+            'FirstRx Count': first_rx_count.reindex(call_duration.index).fillna('없음'),
             'Call Duration (seconds)': call_duration,
-            'Recent HealthCheck Counts': [healthcheck_counts]
+            'Recent HealthCheck Counts': healthcheck_series,
+            'SRTP Error Count': srtp_error_count
         }).fillna('측정 불가')
 
         st.write(rtp_analysis)
