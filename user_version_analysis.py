@@ -16,9 +16,14 @@ def user_version_analysis():
         # User Id 별 개수 분석
         if 'User Id' in df.columns:
             user_counts = df['User Id'].value_counts().reset_index()
+            total_unique_users = df['User Id'].nunique()
             user_counts.columns = ['User Id', '개수']
-            st.subheader("User Id 별 개수")
-            st.table(user_counts)
+            st.subheader(f"User Id 별 개수 (중복 제거 User Id 수: {total_unique_users})")
+            top_10_users = user_counts.head(10)
+            st.table(top_10_users)
+
+            with st.expander("전체 User Id 보기"):
+                st.table(user_counts)
             st.bar_chart(user_counts.set_index('User Id')['개수'])
         else:
             st.warning("User Id 열이 없습니다.")
@@ -32,3 +37,6 @@ def user_version_analysis():
             st.bar_chart(version_counts.set_index('버전')['개수'])
         else:
             st.warning("Version 열이 없습니다.")
+
+if __name__ == "__main__":
+    user_version_analysis()
