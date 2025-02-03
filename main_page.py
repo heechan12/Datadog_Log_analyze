@@ -3,7 +3,7 @@ import pandas as pd
 from sequence_diagram import generate_plantuml_sequence, render_plantuml
 from analysis_helpers import get_call_duration, get_recent_healthcheck_counts, get_srtp_error_count, get_bye_reasons
 
-def load_data(file):
+def load_and_process(file):
     df = pd.read_csv(file)
     # UTC 시간을 KST(한국 시간)으로 변환
     df['timestamp'] = pd.to_datetime(df['timestamp'], errors='coerce')
@@ -11,14 +11,13 @@ def load_data(file):
     df['Resource Url'] = df['Resource Url'].str.strip()  # 공백 제거
     return df
 
-def main():
-    st.set_page_config(layout="wide")
-    st.title("CSV 파일 분석 도구")
+def main_page():
+    st.title("메인 페이지 - CSV 파일 분석 도구")
 
     uploaded_file = st.file_uploader("CSV 파일 업로드", type=["csv"])
 
     if uploaded_file is not None:
-        df = load_data(uploaded_file)
+        df = load_and_process(uploaded_file)
         df = df.dropna(subset=['context.callID'])  # NaN인 Call ID 제거
 
         # RTP Timeout 분석
@@ -63,10 +62,11 @@ def main():
 
         # 사이드바에서 원하는 열 선택
         st.sidebar.header("열 선택")
-        columns_to_show = st.sidebar.multiselect("보고 싶은 열을 선택하세요", df.columns.tolist(), default=df.columns.tolist())
-
-        st.write("### 선택한 열 데이터")
-        st.write(df[columns_to_show])
+        columns_to_show = st.sidebar.multiselect(
+            "보고 싶은 열을 선택하세요",
+            df.columns.tolist(),
+            default=[col for col in df.columns if col not in ['has_replay', 'status', 'timestamp', 'View name', 'Resource Duration', 'Resource Size', 'Resource Status']]
+        )
 
         # 필터링 옵션
         st.sidebar.header("필터")
@@ -92,5 +92,8 @@ def main():
         st.write("### 필터링된 데이터")
         st.write(filtered_df[columns_to_show])
 
+        st.write("### 선택한 열 데이터")
+        st.write(df[columns_to_show])
+
 if __name__ == "__main__":
-    main()
+    main_page()
