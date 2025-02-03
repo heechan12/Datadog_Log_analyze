@@ -29,19 +29,27 @@ def get_call_duration(df):
 # Optimized HealthCheck Counts per Call ID
 # Fixed reindex and data conversion issue
 def get_recent_healthcheck_counts(df):
+    # HealthCheck 로그 필터링
     healthcheck_df = df[df['Resource Url'].str.contains('res/ENGINE_ReceiveHealthCheck', case=False, na=False)]
 
-    # Group and get recent counts
+    # 열이 존재하는지 확인
+    if '@context.totalCount' not in df.columns:
+        return pd.Series(['없음'] * len(df), index=df.index, name='Recent HealthCheck Counts')
+
+    # Call ID별 최근 5개 HealthCheck 데이터 추출
     recent_counts = healthcheck_df.groupby('context.callID').apply(
         lambda x: ', '.join(map(str, x.sort_values(by='timestamp', ascending=False).head(5)['@context.totalCount'].tolist()))
-    )
+    ).reset_index()
 
-    # Reindex to match all Call IDs and fill missing values with '없음'
-    recent_counts = recent_counts.reindex(df['context.callID'].unique(), fill_value='없음')
+    # 원본 데이터프레임과 매칭하기 위해 merge 사용
+    merged_df = df[['context.callID']].merge(recent_counts, on='context.callID', how='left')
+    merged_df = merged_df.rename(columns={0: 'Recent HealthCheck Counts'})  # 컬럼 이름 설정
+    merged_df['Recent HealthCheck Counts'] = merged_df['Recent HealthCheck Counts'].fillna('없음')
 
-    # Ensure it returns a valid pandas Series with matching index
-    return recent_counts.reset_index(drop=True).astype(str)
+    # 디버그 출력
+    print("최종 매칭된 Recent HealthCheck Counts:\n", merged_df['Recent HealthCheck Counts'])
 
+    return merged_df['Recent HealthCheck Counts']
 
 
 # SRTP Error Count Calculation
