@@ -18,22 +18,24 @@ def main_page():
 
     if uploaded_file is not None:
         df = load_and_process(uploaded_file)
-        df = df.dropna(subset=['context.callID'])  # NaN인 Call ID 제거
+
+        # RTP Timeout 분석을 위해 Call ID가 필요한 경우만 사용
+        call_id_filtered_df = df.dropna(subset=['context.callID'])
 
         # RTP Timeout 분석
         st.write("### 통화 종료(BYE) 분석")
-        capture_callback_count = df[df['context.method'] == 'CaptureCallback'].groupby('context.callID').size().reindex(
-            df['context.callID'].unique(), fill_value=0)
-        first_rx_count = df[df['Resource Url'].str.contains('firstRx', na=False)].groupby(
-            'context.callID').size().reindex(df['context.callID'].unique(), fill_value=0)
-        call_duration = get_call_duration(df).fillna(0)
+        capture_callback_count = call_id_filtered_df[call_id_filtered_df['context.method'] == 'CaptureCallback'].groupby('context.callID').size().reindex(
+            call_id_filtered_df['context.callID'].unique(), fill_value=0)
+        first_rx_count = call_id_filtered_df[call_id_filtered_df['Resource Url'].str.contains('firstRx', na=False)].groupby(
+            'context.callID').size().reindex(call_id_filtered_df['context.callID'].unique(), fill_value=0)
+        call_duration = get_call_duration(call_id_filtered_df).fillna(0)
 
         # 수정된 HealthCheck Counts 재정렬
-        healthcheck_counts = get_recent_healthcheck_counts(df)
+        healthcheck_counts = get_recent_healthcheck_counts(call_id_filtered_df)
         healthcheck_series = healthcheck_counts.reindex(call_duration.index, fill_value='없음')
 
-        srtp_error_count = get_srtp_error_count(df).reindex(call_duration.index, fill_value=0)
-        bye_reasons = get_bye_reasons(df).reindex(call_duration.index).fillna('없음')
+        srtp_error_count = get_srtp_error_count(call_id_filtered_df).reindex(call_duration.index, fill_value=0)
+        bye_reasons = get_bye_reasons(call_id_filtered_df).reindex(call_duration.index).fillna('없음')
 
         # 모든 열의 길이를 call_duration 기준으로 맞춤
         rtp_analysis = pd.DataFrame({
@@ -49,12 +51,12 @@ def main_page():
 
         # Call Flow 분석 (확대/축소 가능)
         with st.expander("### Call Flow 분석 (시퀀스 다이어그램)", expanded=False):
-            call_ids = df['context.callID'].dropna().unique()
+            call_ids = call_id_filtered_df['context.callID'].dropna().unique()
             selected_call_id = st.radio("Call ID 선택", options=call_ids)
             st.write(f"선택된 Call ID: {selected_call_id}")
 
             # Generate sequence diagram
-            plantuml_code = generate_plantuml_sequence(df, selected_call_id)
+            plantuml_code = generate_plantuml_sequence(call_id_filtered_df, selected_call_id)
             diagram_content = render_plantuml(plantuml_code)
 
             # Display the contents of sequence_diagram.txt
