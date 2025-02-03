@@ -13,6 +13,15 @@ def user_version_analysis():
     if uploaded_file is not None:
         df = load_and_process(uploaded_file)
 
+        # 전체 열의 개수 및 중복 제거된 User Id 수 계산 및 표시
+        total_rows = len(df)
+        total_unique_users = df['User Id'].nunique() if 'User Id' in df.columns else 0
+        summary_table = pd.DataFrame({
+            '전체 행의 개수': [total_rows],
+            '중복 제거된 User Id 수': [total_unique_users]
+        })
+        st.table(summary_table)
+
         # User Id 별 개수 분석
         if 'User Id' in df.columns:
             user_counts = df['User Id'].value_counts().reset_index()
