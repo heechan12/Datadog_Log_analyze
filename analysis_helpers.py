@@ -34,22 +34,18 @@ def get_recent_healthcheck_counts(df):
 
     # 열이 존재하는지 확인
     if '@context.totalCount' not in df.columns:
-        return pd.Series(['없음'] * len(df), index=df.index, name='Recent HealthCheck Counts')
+        return pd.Series(['없음'] * len(df['context.callID']), index=df.index, name='Recent HealthCheck Counts')
 
-    # Call ID별 최근 5개 HealthCheck 데이터 추출
+    # Call ID별 최근 5개 HealthCheck 데이터 추출 (소수점 제거)
     recent_counts = healthcheck_df.groupby('context.callID').apply(
-        lambda x: ', '.join(map(str, x.sort_values(by='timestamp', ascending=False).head(5)['@context.totalCount'].tolist()))
-    ).reset_index()
+        lambda x: ', '.join(map(lambda y: str(int(float(y))),
+                                x.sort_values(by='timestamp', ascending=False).head(5)['@context.totalCount'].tolist()))
+    )
 
-    # 원본 데이터프레임과 매칭하기 위해 merge 사용
-    merged_df = df[['context.callID']].merge(recent_counts, on='context.callID', how='left')
-    merged_df = merged_df.rename(columns={0: 'Recent HealthCheck Counts'})  # 컬럼 이름 설정
-    merged_df['Recent HealthCheck Counts'] = merged_df['Recent HealthCheck Counts'].fillna('없음')
+    # 디버깅: 추출된 recent_counts 출력
+    print("Recent HealthCheck Counts:", recent_counts)
 
-    # 디버그 출력
-    print("최종 매칭된 Recent HealthCheck Counts:\n", merged_df['Recent HealthCheck Counts'])
-
-    return merged_df['Recent HealthCheck Counts']
+    return recent_counts
 
 
 # SRTP Error Count Calculation

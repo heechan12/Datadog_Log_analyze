@@ -30,21 +30,23 @@ def main_page():
             'context.callID').size().reindex(call_id_filtered_df['context.callID'].unique(), fill_value=0)
         call_duration = get_call_duration(call_id_filtered_df).fillna(0)
 
-        # 수정된 HealthCheck Counts 재정렬
+        # HealthCheck Counts 재정렬 (reindex 사용)
         healthcheck_counts = get_recent_healthcheck_counts(call_id_filtered_df)
+
+        # Call ID 기준으로 직접 매칭하고 fillna 처리
         healthcheck_series = healthcheck_counts.reindex(call_duration.index, fill_value='없음')
 
         srtp_error_count = get_srtp_error_count(call_id_filtered_df).reindex(call_duration.index, fill_value=0)
         bye_reasons = get_bye_reasons(call_id_filtered_df).reindex(call_duration.index).fillna('없음')
 
-        # 모든 열의 길이를 call_duration 기준으로 맞춤
+        # 모든 배열의 인덱스가 일치하도록 설정하고 문자열 충돌 방지
         rtp_analysis = pd.DataFrame({
-            'BYE Reason': bye_reasons,
-            'CaptureCallback Count': capture_callback_count.astype(int),
-            'FirstRx Count': first_rx_count.astype(int),
+            'BYE Reason': bye_reasons.reindex(call_duration.index).fillna('없음'),
+            'CaptureCallback Count': capture_callback_count.reindex(call_duration.index, fill_value=0).astype(int),
+            'FirstRx Count': first_rx_count.reindex(call_duration.index, fill_value=0).astype(int),
             'Call Duration (seconds)': call_duration.astype(float),
-            'Recent HealthCheck Counts': healthcheck_series,
-            'SRTP Error Count': srtp_error_count.astype(int)
+            'Recent HealthCheck Counts': healthcheck_series.astype(str),  # 문자열로 명확히 변환
+            'SRTP Error Count': srtp_error_count.reindex(call_duration.index, fill_value=0).astype(int)
         })
 
         st.write(rtp_analysis)
