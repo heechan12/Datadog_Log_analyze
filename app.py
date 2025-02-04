@@ -1,8 +1,13 @@
 import streamlit as st
+from streamlit.source_util import page_icon_and_name
 from streamlit_option_menu import option_menu
 
 # 페이지 설정 (여기서 한 번만 호출)
-st.set_page_config(layout="wide")
+st.set_page_config(
+    layout="wide",
+    page_title="DataDog 분석 Tool",
+    page_icon=":technologist:"
+)
 
 # 사이드바 메뉴
 with st.sidebar:
