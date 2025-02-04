@@ -5,11 +5,19 @@ from analysis_helpers import get_call_duration, get_recent_healthcheck_counts, g
 from datetime import timedelta
 
 def load_and_process(file):
+    # df = pd.read_csv(file)
+    # # UTC 시간을 KST(한국 시간)으로 변환
+    # df['timestamp'] = pd.to_datetime(df['timestamp'], errors='coerce')
+    # df['Resource Url'] = df['Resource Url'].str.replace('https://aicall-lgu.com/', '', regex=False)
+    # df['Resource Url'] = df['Resource Url'].str.strip()  # 공백 제거
+    # return df
     df = pd.read_csv(file)
     # UTC 시간을 KST(한국 시간)으로 변환
-    df['timestamp'] = pd.to_datetime(df['timestamp'], errors='coerce')
+    df['timestamp'] = pd.to_datetime(df['timestamp'], format='%Y-%m-%dT%H:%M:%S.%fZ', errors='coerce').dt.tz_localize(
+        'UTC').dt.tz_convert('Asia/Seoul')
+    df['Date'] = pd.to_datetime(df['Date'], format='%Y-%m-%dT%H:%M:%S.%fZ', errors='coerce').dt.tz_localize(
+        'UTC').dt.tz_convert('Asia/Seoul')
     df['Resource Url'] = df['Resource Url'].str.replace('https://aicall-lgu.com/', '', regex=False)
-    df['Resource Url'] = df['Resource Url'].str.strip()  # 공백 제거
     return df
 
 def main_page():
