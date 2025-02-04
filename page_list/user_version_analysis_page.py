@@ -6,7 +6,7 @@ def load_and_process(file):
     return df
 
 def user_version_analysis_page():
-    st.title("User/버전 분석 페이지")
+    st.title("User/버전 별 분석 페이지")
 
     uploaded_file = st.file_uploader("CSV 파일 업로드", type=["csv"])
 
