@@ -17,6 +17,7 @@ with st.sidebar:
         menu_icon="signpost-split",
         default_index=0,
     )
+    st.caption("heechan12")
 
 # 페이지 선택에 따라 다른 페이지 호출
 if selected == "상세 로그 분석 페이지":
