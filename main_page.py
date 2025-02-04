@@ -12,7 +12,7 @@ def load_and_process(file):
     return df
 
 def main_page():
-    st.title("메인 페이지 - CSV 파일 분석 도구")
+    st.title("상세 로그 분석 페이지")
 
     uploaded_file = st.file_uploader("CSV 파일 업로드", type=["csv"])
 
