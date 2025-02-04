@@ -12,8 +12,8 @@ st.set_page_config(
 with st.sidebar:
     selected = option_menu(
         menu_title="Menu",
-        options=["상세 로그 분석 페이지", "User/버전 별 분석 페이지"],
-        icons=["file-earmark-break", "bar-chart"],
+        options=["상세 로그 분석 페이지", "User/버전 별 분석 페이지", "사용법"],
+        icons=["file-earmark-break", "bar-chart", "book"],
         menu_icon="signpost-split",
         default_index=0,
     )
@@ -26,3 +26,7 @@ if selected == "상세 로그 분석 페이지":
 elif selected == "User/버전 별 분석 페이지":
     from page_list.user_version_analysis_page import user_version_analysis_page
     user_version_analysis_page()
+
+elif selected == "사용법" :
+    from page_list.readme_page import readme_page
+    readme_page()
