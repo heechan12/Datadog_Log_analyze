@@ -20,9 +20,9 @@ with st.sidebar:
 
 # 페이지 선택에 따라 다른 페이지 호출
 if selected == "상세 로그 분석 페이지":
-    from pages.log_analysis_page import log_analysis_page
+    from page_list.log_analysis_page import log_analysis_page
     log_analysis_page()
 
 elif selected == "User/버전 별 분석 페이지":
-    from pages.user_version_analysis_page import user_version_analysis_page
+    from page_list.user_version_analysis_page import user_version_analysis_page
     user_version_analysis_page()
