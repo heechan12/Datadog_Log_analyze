@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
-from sequence_diagram import generate_plantuml_sequence, render_plantuml
-from analysis_helpers import get_call_duration, get_recent_healthcheck_counts, get_srtp_error_count, get_bye_reasons
+from utils.sequence_diagram import generate_plantuml_sequence, render_plantuml
+from utils.analysis_helpers import get_call_duration, get_recent_healthcheck_counts, get_srtp_error_count, get_bye_reasons
 from datetime import timedelta
 
 def load_and_process(file):
@@ -71,7 +71,7 @@ def log_analysis_page():
             diagram_content = render_plantuml(plantuml_code)
 
             # Display the contents of sequence_diagram.txt
-            st.text_area("시퀀스 다이어그램 내용 (sequence_diagram.txt)", diagram_content, height=400)
+            st.text_area("시퀀스 다이어그램", diagram_content, height=400)
 
         # 사이드바에서 원하는 열 선택
         st.sidebar.header("열 선택")
