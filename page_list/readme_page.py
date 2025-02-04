@@ -4,6 +4,11 @@ def readme_page() :
     # Title
     # st.markdown("# 사용법")
     st.header("사용법")
+    st.info(
+        """
+        내부적으로 로그를 빠르게 분석하기 위해 만들었습니다.\n
+        많이 미흡할 수 있습니다.😱
+        """)
 
     # Subtitle - 상세 로그 분석 페이지
     st.markdown("### :blue-background[*상세 로그 분석 페이지*] ")
@@ -19,7 +24,7 @@ def readme_page() :
 
     # Subtitle - User/버전 별 분석 페이지
     st.markdown("### :blue-background[*User/버전 별 분석 페이지*] ")
-    st.markdown(":warning: :red[**다운로드 전 usr.id, app version column을 미리 추가해주세요**]")
+    st.warning("‼️ :red[**다운로드 전 usr.id, app version column을 미리 추가해주세요**]")
     st.markdown("#### 1. Datadog 에서 csv 파일 다운로드")
     st.image("assets/user_version_analysis_page_readme.png")
     st.markdown("#### 2. 상세 로그 분석 페이지에 csv 파일 업로드 및 통계 확인")
