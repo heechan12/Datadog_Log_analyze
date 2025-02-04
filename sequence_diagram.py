@@ -16,12 +16,12 @@ def generate_plantuml_sequence(df, call_id):
         timestamp = row['timestamp'].strftime('%Y-%m-%d %H:%M:%S') if pd.notna(row['timestamp']) else 'Unknown Time'
         method = row['context.method']
         url = row['Resource Url']
-        direction = "UE -> Server" if 'res/SDK_restReq' in url else "Server -> UE" if 'res/SDK_longRes' in url else None
+        direction = "UE -> Server" if 'res/SDK_restReq' in url else "UE <- Server" if 'res/SDK_longRes' in url else None
 
         if direction == "UE -> Server":
             plantuml_code.append(f"UE -> Server: {method} [{timestamp}]")
-        elif direction == "Server -> UE":
-            plantuml_code.append(f"Server -> UE: {method} [{timestamp}]")
+        elif direction == "UE <- Server":
+            plantuml_code.append(f"UE <- Server: {method} [{timestamp}]")
 
     plantuml_code.append("@enduml")
     return "\n".join(plantuml_code)
