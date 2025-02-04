@@ -20,7 +20,7 @@ def load_and_process(file):
     df['Resource Url'] = df['Resource Url'].str.replace('https://aicall-lgu.com/', '', regex=False)
     return df
 
-def main_page():
+def log_analysis_page():
     st.title("상세 로그 분석 페이지")
 
     uploaded_file = st.file_uploader("CSV 파일 업로드", type=["csv"])
@@ -127,4 +127,4 @@ def main_page():
         st.write(df[columns_to_show])
 
 if __name__ == "__main__":
-    main_page()
+    log_analysis_page()
