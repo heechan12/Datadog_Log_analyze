@@ -21,31 +21,38 @@ def user_version_analysis():
             '중복 제거된 User Id 수': [total_unique_users]
         })
         st.table(summary_table)
+        # st.dataframe(summary_table)
 
-        # User Id 별 개수 분석
-        if 'User Id' in df.columns:
-            user_counts = df['User Id'].value_counts().reset_index()
-            total_unique_users = df['User Id'].nunique()
-            user_counts.columns = ['User Id', '개수']
-            st.subheader(f"User Id 별  RTP Timeout 개수")
-            top_10_users = user_counts.head(10)
-            st.table(top_10_users)
+        user_id_col, app_version_col = st.columns(2)
 
-            with st.expander("전체 User Id 보기"):
-                st.table(user_counts)
-            # st.bar_chart(user_counts.set_index('User Id')['개수'])
-        else:
-            st.warning("User Id 열이 없습니다.")
+        with user_id_col :
+            # User Id 별 개수 분석
+            if 'User Id' in df.columns:
+                user_counts = df['User Id'].value_counts().reset_index()
+                total_unique_users = df['User Id'].nunique()
+                user_counts.columns = ['User Id', '개수']
+                st.subheader(":orange-background[*User ID 별 RTP Timeout 개수*]")
+                top_10_users = user_counts.head(10)
+                st.table(top_10_users)
 
-        # 버전 별 개수 분석
-        if 'Version' in df.columns:
-            version_counts = df['Version'].value_counts().reset_index()
-            version_counts.columns = ['버전', '개수']
-            st.subheader("버전 별 개수")
-            st.table(version_counts)
-            # st.bar_chart(version_counts.set_index('버전')['개수'])
-        else:
-            st.warning("Version 열이 없습니다.")
+                with st.expander("전체 User Id 보기"):
+                    st.table(user_counts)
+                # st.bar_chart(user_counts.set_index('User Id')['개수'])
+            else:
+                st.warning("User Id 열이 없습니다.")
+
+        with app_version_col :
+            # 버전 별 개수 분석
+            if 'Version' in df.columns:
+                version_counts = df['Version'].value_counts().reset_index()
+                version_counts.columns = ['버전', '개수']
+                st.subheader(":orange-background[*앱 버전 별 RTP Timeout 개수*]")
+                st.table(version_counts)
+                # st.bar_chart(version_counts.set_index('버전')['개수'])
+            else:
+                st.warning("Version 열이 없습니다.")
+
+
 
 if __name__ == "__main__":
     user_version_analysis()
