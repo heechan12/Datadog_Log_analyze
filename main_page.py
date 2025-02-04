@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from sequence_diagram import generate_plantuml_sequence, render_plantuml
 from analysis_helpers import get_call_duration, get_recent_healthcheck_counts, get_srtp_error_count, get_bye_reasons
+from datetime import timedelta
 
 def load_and_process(file):
     df = pd.read_csv(file)
@@ -23,7 +24,7 @@ def main_page():
         call_id_filtered_df = df.dropna(subset=['context.callID'])
 
         # RTP Timeout 분석
-        st.write("### 통화 종료(BYE) 분석")
+        st.subheader(":orange-background[*통화 종료(BYE) 분석*]")
         capture_callback_count = call_id_filtered_df[call_id_filtered_df['context.method'] == 'CaptureCallback'].groupby('context.callID').size().reindex(
             call_id_filtered_df['context.callID'].unique(), fill_value=0)
         first_rx_count = call_id_filtered_df[call_id_filtered_df['Resource Url'].str.contains('firstRx', na=False)].groupby(
@@ -93,10 +94,28 @@ def main_page():
             else:
                 filtered_df = filtered_df.loc[pd.concat(filters, axis=1).any(axis=1)]
 
-        st.write("### 필터링된 데이터")
-        st.write(filtered_df[columns_to_show])
+        st.subheader(":orange-background[*필터링된 데이터*]")
 
-        st.write("### 선택한 열 데이터")
+        # 시간 필터링 위젯 추가
+        min_time = pd.to_datetime(filtered_df['timestamp'].min()).to_pydatetime()
+        max_time = pd.to_datetime(filtered_df['timestamp'].max()).to_pydatetime()
+
+        time_range = st.slider(
+            '시간 범위 선택',
+            min_value=min_time,
+            max_value=max_time,
+            value=(min_time, max_time),
+            step=timedelta(minutes=1),
+            format="YYYY-MM-DD HH:mm"
+        )
+        # 시간 필터링 적용
+        time_filtered_df = filtered_df[
+            (filtered_df['timestamp'] >= time_range[0]) & (filtered_df['timestamp'] <= time_range[1])]
+
+        # 결과 출력
+        st.write(time_filtered_df[columns_to_show])
+
+        st.subheader(":orange-background[*선택한 열 데이터(전체 로그)*]")
         st.write(df[columns_to_show])
 
 if __name__ == "__main__":
