@@ -1,6 +1,8 @@
 import streamlit as st
 from streamlit_option_menu import option_menu
 
+from utils.CONSTANTS import PG_Name_LOG_ANALYSIS, PG_Name_USER_VERSION, PG_Name_HOW_TO
+
 # 페이지 설정 (여기서 한 번만 호출)
 st.set_page_config(
     layout="wide",
@@ -12,7 +14,7 @@ st.set_page_config(
 with st.sidebar:
     selected = option_menu(
         menu_title="Menu",
-        options=["상세 로그 분석 페이지", "User/버전 별 분석 페이지", "사용법"],
+        options=[PG_Name_LOG_ANALYSIS, PG_Name_USER_VERSION, PG_Name_HOW_TO],
         icons=["file-earmark-break", "bar-chart", "book"],
         menu_icon="signpost-split",
         default_index=0,
@@ -20,14 +22,14 @@ with st.sidebar:
     st.caption("heechan12")
 
 # 페이지 선택에 따라 다른 페이지 호출
-if selected == "상세 로그 분석 페이지":
+if selected == PG_Name_LOG_ANALYSIS:
     from page_list.log_analysis_page import log_analysis_page
     log_analysis_page()
 
-elif selected == "User/버전 별 분석 페이지":
+elif selected == PG_Name_USER_VERSION:
     from page_list.user_version_analysis_page import user_version_analysis_page
     user_version_analysis_page()
 
-elif selected == "사용법" :
+elif selected == PG_Name_HOW_TO :
     from page_list.readme_page import readme_page
     readme_page()

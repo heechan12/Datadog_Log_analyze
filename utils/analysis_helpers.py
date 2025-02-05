@@ -1,5 +1,7 @@
 import pandas as pd
 
+from utils.CONSTANTS import TB_Name_RECENT_HEALTH_CHECK
+
 
 # Updated Call Duration Calculation with Debugging
 def get_call_duration(df):
@@ -34,16 +36,13 @@ def get_recent_healthcheck_counts(df):
 
     # 열이 존재하는지 확인
     if '@context.totalCount' not in df.columns:
-        return pd.Series(['없음'] * len(df['context.callID']), index=df.index, name='Recent HealthCheck Counts')
+        return pd.Series(['없음'] * len(df['context.callID']), index=df.index, name=TB_Name_RECENT_HEALTH_CHECK)
 
     # Call ID별 최근 5개 HealthCheck 데이터 추출 (소수점 제거)
     recent_counts = healthcheck_df.groupby('context.callID').apply(
         lambda x: ', '.join(map(lambda y: str(int(float(y))),
                                 x.sort_values(by='timestamp', ascending=False).head(5)['@context.totalCount'].tolist()))
     )
-
-    # 디버깅: 추출된 recent_counts 출력
-    print("Recent HealthCheck Counts:", recent_counts)
 
     return recent_counts
 

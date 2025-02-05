@@ -1,14 +1,17 @@
 import streamlit as st
 import pandas as pd
 
+from utils.CONSTANTS import PG_Name_USER_VERSION, CSV_FILE_UPLOAD
+
+
 def load_and_process(file):
     df = pd.read_csv(file)
     return df
 
 def user_version_analysis_page():
-    st.title("User/버전 별 분석 페이지")
+    st.title(PG_Name_USER_VERSION)
 
-    uploaded_file = st.file_uploader("CSV 파일 업로드", type=["csv"])
+    uploaded_file = st.file_uploader(CSV_FILE_UPLOAD, type=["csv"])
 
     if uploaded_file is not None:
         df = load_and_process(uploaded_file)
