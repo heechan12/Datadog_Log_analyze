@@ -1,7 +1,8 @@
 import streamlit as st
 import pandas as pd
 from utils.sequence_diagram import generate_plantuml_sequence, render_plantuml
-from utils.analysis_helpers import get_call_duration, get_recent_healthcheck_counts, get_srtp_error_count, get_bye_reasons
+from utils.analysis_helpers import get_call_duration, get_recent_healthcheck_counts, get_srtp_error_count, \
+    get_bye_reasons, get_stopholepunching_code
 from datetime import timedelta
 
 def load_and_process(file):
@@ -40,6 +41,7 @@ def log_analysis_page():
         healthcheck_series = healthcheck_counts.reindex(call_duration.index, fill_value='없음')
 
         srtp_error_count = get_srtp_error_count(call_id_filtered_df).reindex(call_duration.index, fill_value=0)
+        stop_holepunching_code = get_stopholepunching_code(call_id_filtered_df).reindex(call_duration.index)
         bye_reasons = get_bye_reasons(call_id_filtered_df).reindex(call_duration.index).fillna('없음')
 
         # 모든 배열의 인덱스가 일치하도록 설정하고 문자열 충돌 방지
@@ -49,7 +51,8 @@ def log_analysis_page():
             'FirstRx Count': first_rx_count.reindex(call_duration.index, fill_value=0).astype(int),
             'Call Duration (seconds)': call_duration.astype(float),
             'Recent HealthCheck Counts': healthcheck_series.astype(str),  # 문자열로 명확히 변환
-            'SRTP Error Count': srtp_error_count.reindex(call_duration.index, fill_value=0).astype(int)
+            'SRTP Error Count': srtp_error_count.reindex(call_duration.index, fill_value=0).astype(int),
+            'StopHolePunching Code' : stop_holepunching_code.reindex(call_duration.index, fill_value=0).astype(str),
         })
 
         st.write(rtp_analysis)

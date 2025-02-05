@@ -42,9 +42,6 @@ def get_recent_healthcheck_counts(df):
                                 x.sort_values(by='timestamp', ascending=False).head(5)['@context.totalCount'].tolist()))
     )
 
-    # 디버깅: 추출된 recent_counts 출력
-    print("Recent HealthCheck Counts:", recent_counts)
-
     return recent_counts
 
 
@@ -61,3 +58,19 @@ def get_bye_reasons(df):
     bye_reasons = df[df['context.method'] == 'BYE'].groupby('context.callID')['context.reasonFromLog'].first().fillna(
         '없음')
     return bye_reasons
+
+
+# Stop Holepunching code 추출
+def get_stopholepunching_code(df):
+    stop_holepunching_code_df = df[df['Resource Url'].str.contains('res/ENGINE_stopHolePunching', case=False, na=False)]
+
+    # 열이 존재하는지 확인
+    if 'context.code' not in df.columns:
+        return pd.Series(['없음'] * len(df['context.callID']), index=df.index, name='StopHolePunching Code')
+
+    # Call ID별 최근 1개 stop_holepunching_code 데이터 추출
+    stop_holepunching_code = stop_holepunching_code_df.groupby('context.callID').apply(
+        lambda x: ', '.join(x.sort_values(by='timestamp', ascending=False).head(1)['context.code'].astype(str).tolist())
+    )
+
+    return stop_holepunching_code.reindex(df['context.callID'].unique(), fill_value='없음')
