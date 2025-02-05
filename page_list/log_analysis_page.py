@@ -1,5 +1,8 @@
 import streamlit as st
 import pandas as pd
+
+from utils.CONSTANTS import TB_Name_BYE_REASON, TB_Name_CAPTURE_CALLBACK, TB_Name_FIRST_RX, TB_Name_CALL_DURATION, \
+    TB_Name_RECENT_HEALTH_CHECK, TB_Name_SRTP_ERROR, PG_Name_LOG_ANALYSIS, CSV_FILE_UPLOAD
 from utils.sequence_diagram import generate_plantuml_sequence, render_plantuml
 from utils.analysis_helpers import get_call_duration, get_recent_healthcheck_counts, get_srtp_error_count, \
     get_bye_reasons, get_stopholepunching_code
@@ -16,9 +19,9 @@ def load_and_process(file):
     return df
 
 def log_analysis_page():
-    st.title("상세 로그 분석 페이지")
+    st.title(PG_Name_LOG_ANALYSIS)
 
-    uploaded_file = st.file_uploader("CSV 파일 업로드", type=["csv"])
+    uploaded_file = st.file_uploader(CSV_FILE_UPLOAD, type=["csv"])
 
     if uploaded_file is not None:
         df = load_and_process(uploaded_file)
@@ -46,12 +49,12 @@ def log_analysis_page():
 
         # 모든 배열의 인덱스가 일치하도록 설정하고 문자열 충돌 방지
         rtp_analysis = pd.DataFrame({
-            'BYE Reason': bye_reasons.reindex(call_duration.index).fillna('없음'),
-            'CaptureCallback Count': capture_callback_count.reindex(call_duration.index, fill_value=0).astype(int),
-            'FirstRx Count': first_rx_count.reindex(call_duration.index, fill_value=0).astype(int),
-            'Call Duration (seconds)': call_duration.astype(float),
-            'Recent HealthCheck Counts': healthcheck_series.astype(str),  # 문자열로 명확히 변환
-            'SRTP Error Count': srtp_error_count.reindex(call_duration.index, fill_value=0).astype(int),
+            TB_Name_BYE_REASON: bye_reasons.reindex(call_duration.index).fillna('없음'),
+            TB_Name_CAPTURE_CALLBACK: capture_callback_count.reindex(call_duration.index, fill_value=0).astype(int),
+            TB_Name_FIRST_RX: first_rx_count.reindex(call_duration.index, fill_value=0).astype(int),
+            TB_Name_CALL_DURATION: call_duration.astype(float),
+            TB_Name_RECENT_HEALTH_CHECK: healthcheck_series.astype(str),  # 문자열로 명확히 변환
+            TB_Name_SRTP_ERROR: srtp_error_count.reindex(call_duration.index, fill_value=0).astype(int)
             'StopHolePunching Code' : stop_holepunching_code.reindex(call_duration.index, fill_value=0).astype(str),
         })
 
