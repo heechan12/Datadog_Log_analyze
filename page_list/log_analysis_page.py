@@ -3,7 +3,7 @@ import pandas as pd
 
 from utils.CONSTANTS import TB_Name_BYE_REASON, TB_Name_CAPTURE_CALLBACK, TB_Name_FIRST_RX, TB_Name_CALL_DURATION, \
     TB_Name_RECENT_HEALTH_CHECK, TB_Name_SRTP_ERROR, PG_Name_LOG_ANALYSIS, CSV_FILE_UPLOAD, \
-    TB_Name_STOP_HOLEPUNCHING_CODE
+    TB_Name_STOP_HOLEPUNCHING_CODE, TITLE_BYE_REASON_ANALYSIS, TITLE_FILTERED_DATA, TITLE_DEFAULT_DATA
 from utils.sequence_diagram import generate_plantuml_sequence, render_plantuml
 from utils.analysis_helpers import get_call_duration, get_recent_healthcheck_counts, get_srtp_error_count, \
     get_bye_reasons, get_stopholepunching_code
@@ -31,7 +31,7 @@ def log_analysis_page():
         call_id_filtered_df = df.dropna(subset=['context.callID'])
 
         # RTP Timeout 분석
-        st.subheader(":orange-background[*통화 종료(BYE) 분석*]")
+        st.subheader(f":orange-background[*{TITLE_BYE_REASON_ANALYSIS}*]")
         capture_callback_count = call_id_filtered_df[call_id_filtered_df['context.method'] == 'CaptureCallback'].groupby('context.callID').size().reindex(
             call_id_filtered_df['context.callID'].unique(), fill_value=0)
         first_rx_count = call_id_filtered_df[call_id_filtered_df['Resource Url'].str.contains('firstRx', na=False)].groupby(
@@ -103,7 +103,7 @@ def log_analysis_page():
             else:
                 filtered_df = filtered_df.loc[pd.concat(filters, axis=1).any(axis=1)]
 
-        st.subheader(":orange-background[*필터링된 데이터*]")
+        st.subheader(f":orange-background[*{TITLE_FILTERED_DATA}*]")
 
         # 시간 필터링 위젯 추가
         min_time = pd.to_datetime(filtered_df['timestamp'].min()).to_pydatetime()
@@ -124,7 +124,7 @@ def log_analysis_page():
         # 결과 출력
         st.write(time_filtered_df[columns_to_show])
 
-        st.subheader(":orange-background[*선택한 열 데이터(전체 로그)*]")
+        st.subheader(f":orange-background[*{TITLE_DEFAULT_DATA}*]")
         st.write(df[columns_to_show])
 
 if __name__ == "__main__":

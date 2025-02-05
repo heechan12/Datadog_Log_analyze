@@ -1,7 +1,8 @@
 import streamlit as st
 import pandas as pd
 
-from utils.CONSTANTS import PG_Name_USER_VERSION, CSV_FILE_UPLOAD
+from utils.CONSTANTS import PG_Name_USER_VERSION, CSV_FILE_UPLOAD, TITLE_RTPTIMEOUT_PER_USER_ID, \
+    TITLE_RTPTIMEOUT_PER_APP_VERSION
 
 
 def load_and_process(file):
@@ -34,7 +35,7 @@ def user_version_analysis_page():
                 user_counts = df['User Id'].value_counts().reset_index()
                 total_unique_users = df['User Id'].nunique()
                 user_counts.columns = ['User Id', '개수']
-                st.subheader(":orange-background[*User ID 별 RTP Timeout 개수*]")
+                st.subheader(f":orange-background[*{TITLE_RTPTIMEOUT_PER_USER_ID}*]")
                 top_10_users = user_counts.head(10)
                 st.table(top_10_users)
 
@@ -49,7 +50,7 @@ def user_version_analysis_page():
             if 'Version' in df.columns:
                 version_counts = df['Version'].value_counts().reset_index()
                 version_counts.columns = ['버전', '개수']
-                st.subheader(":orange-background[*앱 버전 별 RTP Timeout 개수*]")
+                st.subheader(f":orange-background[*{TITLE_RTPTIMEOUT_PER_APP_VERSION}*]")
                 st.table(version_counts)
                 # st.bar_chart(version_counts.set_index('버전')['개수'])
             else:
