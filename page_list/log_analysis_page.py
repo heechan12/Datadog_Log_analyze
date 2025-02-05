@@ -2,7 +2,8 @@ import streamlit as st
 import pandas as pd
 
 from utils.CONSTANTS import TB_Name_BYE_REASON, TB_Name_CAPTURE_CALLBACK, TB_Name_FIRST_RX, TB_Name_CALL_DURATION, \
-    TB_Name_RECENT_HEALTH_CHECK, TB_Name_SRTP_ERROR, PG_Name_LOG_ANALYSIS, CSV_FILE_UPLOAD
+    TB_Name_RECENT_HEALTH_CHECK, TB_Name_SRTP_ERROR, PG_Name_LOG_ANALYSIS, CSV_FILE_UPLOAD, \
+    TB_Name_STOP_HOLEPUNCHING_CODE
 from utils.sequence_diagram import generate_plantuml_sequence, render_plantuml
 from utils.analysis_helpers import get_call_duration, get_recent_healthcheck_counts, get_srtp_error_count, \
     get_bye_reasons, get_stopholepunching_code
@@ -54,8 +55,8 @@ def log_analysis_page():
             TB_Name_FIRST_RX: first_rx_count.reindex(call_duration.index, fill_value=0).astype(int),
             TB_Name_CALL_DURATION: call_duration.astype(float),
             TB_Name_RECENT_HEALTH_CHECK: healthcheck_series.astype(str),  # 문자열로 명확히 변환
-            TB_Name_SRTP_ERROR: srtp_error_count.reindex(call_duration.index, fill_value=0).astype(int)
-            'StopHolePunching Code' : stop_holepunching_code.reindex(call_duration.index, fill_value=0).astype(str),
+            TB_Name_SRTP_ERROR: srtp_error_count.reindex(call_duration.index, fill_value=0).astype(int),
+            TB_Name_STOP_HOLEPUNCHING_CODE : stop_holepunching_code.reindex(call_duration.index, fill_value=0).astype(str),
         })
 
         st.write(rtp_analysis)
