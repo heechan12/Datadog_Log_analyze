@@ -1,15 +1,18 @@
 import streamlit as st
 import pandas as pd
-from streamlit import divider
 
 from utils.CONSTANTS import TB_Name_BYE_REASON, TB_Name_CAPTURE_CALLBACK, TB_Name_FIRST_RX, TB_Name_CALL_DURATION, \
     TB_Name_RECENT_HEALTH_CHECK, TB_Name_SRTP_ERROR, PG_Name_LOG_ANALYSIS, CSV_FILE_UPLOAD, \
-    TB_Name_STOP_HOLEPUNCHING_CODE, TITLE_BYE_REASON_ANALYSIS, TITLE_FILTERED_DATA, TITLE_DEFAULT_DATA, custom_divider
+    TB_Name_STOP_HOLEPUNCHING_CODE, TITLE_BYE_REASON_ANALYSIS, TITLE_FILTERED_DATA, TITLE_DEFAULT_DATA
 from utils.sequence_diagram import generate_plantuml_sequence, render_plantuml
-from utils.analysis_helpers import get_call_duration, get_recent_healthcheck_counts, get_srtp_error_count, \
+from backup_data.analysis_helpers_old import get_call_duration, get_recent_healthcheck_counts, get_srtp_error_count, \
     get_bye_reasons, get_stopholepunching_code
 from datetime import timedelta
 
+'''
+old 버전 백업 목적
+25.02.05 까지 사용함
+'''
 
 def load_and_process(file):
     df = pd.read_csv(file)

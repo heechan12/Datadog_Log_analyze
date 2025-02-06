@@ -20,10 +20,11 @@ with st.sidebar:
         default_index=0,
     )
     st.caption("1.3.3. 최적화")
+    st.caption("지속 수정 중입니다.")
 
 # 페이지 선택에 따라 다른 페이지 호출
 if selected == PG_Name_LOG_ANALYSIS:
-    from page_list.log_analysis_page import log_analysis_page
+    from page_list.log_analysis_page_new import log_analysis_page
     log_analysis_page()
 
 elif selected == PG_Name_USER_VERSION:
