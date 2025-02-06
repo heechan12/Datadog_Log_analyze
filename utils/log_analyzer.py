@@ -10,6 +10,9 @@ def get_call_duration(df, unmatched_value='매칭되지 않음'):
     # Calculate duration
     call_duration = (stop_calls - start_calls).dt.total_seconds()
 
+    # pd.NaT가 있는 경우 "분석 불가"로 대체
+    call_duration = call_duration.fillna('분석 불가')
+
     # 매칭되지 않은 Call ID 처리
     all_call_ids = pd.Index(df['context.callID'].unique())
     duration_with_unmatched = call_duration.reindex(all_call_ids, fill_value=None)
@@ -32,20 +35,18 @@ def get_call_duration(df, unmatched_value='매칭되지 않음'):
 # Optimized HealthCheck Counts per Call ID
 # Fixed reindex and data conversion issues
 def get_recent_healthcheck_counts(df):
-    # HealthCheck 로그 필터링
     healthcheck_df = df[df['Resource Url'].str.contains('res/ENGINE_ReceiveHealthCheck', case=False, na=False)]
 
-    # 열이 존재하는지 확인
     if '@context.totalCount' not in df.columns:
-        return pd.Series(['없음'] * len(df['context.callID']), index=df.index, name=TB_Name_RECENT_HEALTH_CHECK)
+        return pd.Series('없음', index=df['context.callID'].unique())
 
-    # Call ID별 최근 5개 HealthCheck 데이터 추출 (소수점 제거)
-    recent_counts = healthcheck_df.groupby('context.callID').apply(
-        lambda x: ', '.join(map(lambda y: str(int(float(y))),
-                                x.sort_values(by='timestamp', ascending=False).head(5)['@context.totalCount'].tolist()))
-    )
+    # Call ID별 최근 5개 HealthCheck 추출 후 소수점 제거 및 1D 변환
+    recent_counts = healthcheck_df.groupby('context.callID')['@context.totalCount'] \
+                                  .apply(lambda x: ', '.join(map(lambda y: str(int(float(y))), x.sort_values(ascending=False).head(5)))) \
+                                  .reindex(df['context.callID'].unique(), fill_value='없음')
 
     return recent_counts
+
 
 # SRTP Error Count Calculation
 def get_srtp_error_count(df):
@@ -59,15 +60,14 @@ def get_bye_reasons(df):
 
 # Stop Holepunching Code Extraction
 def get_stopholepunching_code(df):
-    stop_holepunching_code_df = df[df['Resource Url'].str.contains('res/ENGINE_stopHolePunching', case=False, na=False)]
+    stop_holepunching_df = df[df['Resource Url'].str.contains('res/ENGINE_stopHolePunching', case=False, na=False)]
 
-    # 열이 존재하는지 확인
     if 'context.code' not in df.columns:
-        return pd.Series(['없음'] * len(df['context.callID']), index=df.index, name='StopHolePunching Code')
+        return pd.Series('없음', index=df['context.callID'].unique())
 
-    # Call ID별 최근 1개 stop_holepunching_code 데이터 추출
-    stop_holepunching_code = stop_holepunching_code_df.groupby('context.callID').apply(
-        lambda x: ', '.join(x.sort_values(by='timestamp', ascending=False).head(1)['context.code'].astype(str).tolist())
-    )
+    # Call ID별 가장 최근 코드를 추출하고 1D로 변환
+    stop_holepunching_code = stop_holepunching_df.groupby('context.callID')['context.code'] \
+                                                 .last() \
+                                                 .reindex(df['context.callID'].unique(), fill_value='없음')
 
-    return stop_holepunching_code.reindex(df['context.callID'].unique(), fill_value='없음')
+    return stop_holepunching_code

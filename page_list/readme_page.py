@@ -9,6 +9,12 @@ def readme_page() :
         내부적으로 로그를 빠르게 분석하기 위해 만들었습니다.\n
         많이 미흡할 수 있습니다.😱
         """)
+    st.warning(
+        """
+        현재까지 확인된 column 순서.. \n
+        context.method | @context.totalcount | context.reasonfromlog | context.callid | @context.appmethod | version | session id | user id | context.fractionlost | context.code
+        """
+    )
 
     # Subtitle - 상세 로그 분석 페이지
     st.markdown("### :blue-background[*상세 로그 분석 페이지*] ")

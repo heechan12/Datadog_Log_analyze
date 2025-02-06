@@ -13,6 +13,7 @@ from utils.log_analyzer import (
     get_bye_reasons, get_stopholepunching_code
 )
 
+
 def load_and_process(file):
     # CSV 파일 읽고 시간 변환 및 URL 처리
     df = pd.read_csv(file)
@@ -23,38 +24,40 @@ def load_and_process(file):
     df['Resource Url'] = df['Resource Url'].str.replace('https://aicall-lgu.com/', '', regex=False)
     return df
 
+
 def filter_valid_call_ids(df):
     """ 유효하지 않은 Call ID (None, Known 등) 제거 """
     valid_df = df[~df['context.callID'].isin([None, 'None', 'Known', 'Unknown'])].dropna(subset=['context.callID'])
     return valid_df
 
+
 def display_call_analysis_table(df):
     st.subheader(f":orange-background[*{TITLE_BYE_REASON_ANALYSIS}*]")
 
-    # Call ID 필터링 적용
     df = filter_valid_call_ids(df)
 
-    # 분석 데이터 추출
-    call_duration = get_call_duration(df)
-    capture_callback_count = df[df['context.method'] == 'CaptureCallback'].groupby('context.callID').size().reindex(
-        df['context.callID'].unique(), fill_value=0)
-    first_rx_count = df[df['Resource Url'].str.contains('firstRx', na=False)].groupby('context.callID').size().reindex(
-        df['context.callID'].unique(), fill_value=0)
-    healthcheck_series = get_recent_healthcheck_counts(df).reindex(call_duration.index, fill_value='없음')
+    call_duration = get_call_duration(df).fillna('분석 불가')
+    capture_callback_count = df[df['context.method'] == 'CaptureCallback'].groupby('context.callID').size() \
+                                  .reindex(df['context.callID'].unique(), fill_value=0)
+
+    first_rx_count = df[df['Resource Url'].str.contains('firstRx', na=False)].groupby('context.callID').size() \
+                     .reindex(df['context.callID'].unique(), fill_value=0)
+
+    healthcheck_series = get_recent_healthcheck_counts(df)  # 이미 1D로 반환됨
+    stop_holepunching_code = get_stopholepunching_code(df)  # 이미 1D로 반환됨
     srtp_error_count = get_srtp_error_count(df).reindex(call_duration.index, fill_value=0)
-    stop_holepunching_code = get_stopholepunching_code(df).reindex(call_duration.index, fill_value='없음')
     bye_reasons = get_bye_reasons(df).reindex(call_duration.index, fill_value='없음')
 
-    # RTP 분석 테이블 생성 (None 등 불필요한 Call ID 제거)
+    # DataFrame 생성 시 모든 데이터를 1D로 보장
     rtp_analysis = pd.DataFrame({
         TB_Name_BYE_REASON: bye_reasons,
-        TB_Name_CAPTURE_CALLBACK: capture_callback_count.astype(int),
-        TB_Name_FIRST_RX: first_rx_count.astype(int),
-        TB_Name_CALL_DURATION: call_duration,
+        TB_Name_CAPTURE_CALLBACK: capture_callback_count,
+        TB_Name_FIRST_RX: first_rx_count,
+        TB_Name_CALL_DURATION: call_duration.astype(str),
         TB_Name_RECENT_HEALTH_CHECK: healthcheck_series.astype(str),
         TB_Name_SRTP_ERROR: srtp_error_count.astype(int),
-        TB_Name_STOP_HOLEPUNCHING_CODE: stop_holepunching_code.astype(str),
-    }).dropna(subset=[TB_Name_BYE_REASON])
+        TB_Name_STOP_HOLEPUNCHING_CODE: stop_holepunching_code.astype(str)
+    })
 
     st.write(rtp_analysis)
 
@@ -68,6 +71,7 @@ def display_call_analysis_table(df):
         plantuml_code = generate_plantuml_sequence(df, selected_call_id)
         diagram_content = render_plantuml(plantuml_code)
         st.text_area("시퀀스 다이어그램", diagram_content, height=400)
+
 
 def log_analysis_page():
     st.title(PG_Name_LOG_ANALYSIS)
@@ -85,7 +89,8 @@ def log_analysis_page():
             "보고 싶은 열을 선택하세요",
             df.columns.tolist(),
             default=[col for col in df.columns if col not in [
-                'has_replay', 'status', 'timestamp', 'View name', 'Resource Duration', 'Resource Size', 'Resource Status'
+                'has_replay', 'status', 'timestamp', 'View name', 'Resource Duration', 'Resource Size',
+                'Resource Status'
             ]]
         )
 
@@ -106,19 +111,21 @@ def log_analysis_page():
                         filters.append(filtered_df[col].isin(selected_values))
 
         if filters:
-            condition = pd.concat(filters, axis=1).all(axis=1) if filter_condition == "AND" else pd.concat(filters, axis=1).any(axis=1)
+            condition = pd.concat(filters, axis=1).all(axis=1) if filter_condition == "AND" else pd.concat(filters,
+                                                                                                           axis=1).any(
+                axis=1)
             filtered_df = filtered_df[condition]
 
         '''
         통화 종료 분석 테이블 영역
         '''
-        with st.container(border=True):
+        with st.container():
             display_call_analysis_table(df)
 
         '''
         필터링 된 데이터 영역
         '''
-        with st.container(border=True):
+        with st.container():
             st.subheader(f":orange-background[*{TITLE_FILTERED_DATA}*]")
 
             # 시간 필터링 위젯 추가
@@ -137,16 +144,17 @@ def log_analysis_page():
             # 시간 필터링 적용
             time_filtered_df = filtered_df[
                 (filtered_df['timestamp'] >= time_range[0]) & (filtered_df['timestamp'] <= time_range[1])
-            ]
+                ]
 
             st.write(time_filtered_df[columns_to_show])
 
         '''
         기본 데이터 영역
         '''
-        with st.container(border=True):
+        with st.container():
             st.subheader(f":orange-background[*{TITLE_DEFAULT_DATA}*]")
             st.write(df[columns_to_show])
+
 
 if __name__ == "__main__":
     log_analysis_page()
