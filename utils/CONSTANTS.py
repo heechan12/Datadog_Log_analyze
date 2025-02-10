@@ -7,6 +7,8 @@ PG_Name_HOW_TO = "사용법"
 
 # Table Name
 TB_Name_BYE_REASON ='BYE Reason'
+TB_Name_CALL_END_REASON = 'Call End Reason'
+TB_Name_CALL_START_TIME = '통화 시작 시간'
 TB_Name_CAPTURE_CALLBACK = 'CaptureCallback 수'
 TB_Name_FIRST_RX = 'FirstRx 수'
 TB_Name_CALL_DURATION = '통화 유지 시간 (초)'

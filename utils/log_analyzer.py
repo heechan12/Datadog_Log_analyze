@@ -53,6 +53,51 @@ def get_srtp_error_count(df):
     srtp_error_count = df[df['Resource Url'].str.contains('res/ENGINE_errorSrtpDepacketizer', case=False, na=False)].groupby('context.callID').size()
     return srtp_error_count
 
+# Call End Reason Extraction
+# cursor ai
+def get_call_end_reasons(df):
+    # 각 통화 종료 유형별로 데이터 추출
+    cancel_calls = df[df['context.method'] == 'CANCEL'].groupby('context.callID')['timestamp'].first()
+    decline_calls = df[df['Resource Url'].str.contains('603 Decline', na=False)].groupby('context.callID')['timestamp'].first()
+    bye_calls = df[df['context.method'] == 'BYE'].groupby('context.callID').agg({
+        'timestamp': 'first',
+        'context.reasonFromLog': 'first'
+    })
+
+    # 결과를 저장할 Series 생성
+    all_call_ids = df['context.callID'].unique()
+    end_reasons = pd.Series(index=all_call_ids, data='알 수 없음')
+
+    # 각 종료 유형별로 처리 (시간순으로 가장 먼저 발생한 이벤트를 종료 원인으로 선택)
+    for call_id in all_call_ids:
+        reason = '알 수 없음'
+        reason_time = pd.Timestamp.max
+
+        # CANCEL 체크
+        if call_id in cancel_calls:
+            cancel_time = cancel_calls[call_id]
+            if cancel_time < reason_time:
+                reason = 'CANCEL'
+                reason_time = cancel_time
+
+        # 603 Decline 체크
+        if call_id in decline_calls:
+            decline_time = decline_calls[call_id]
+            if decline_time < reason_time:
+                reason = '603 Decline'
+                reason_time = decline_time
+
+        # BYE 체크
+        if call_id in bye_calls.index:
+            bye_time = bye_calls.loc[call_id, 'timestamp']
+            if bye_time < reason_time:
+                reason = f"BYE ({bye_calls.loc[call_id, 'context.reasonFromLog']})"
+                reason_time = bye_time
+
+        end_reasons[call_id] = reason
+
+    return end_reasons
+
 # BYE Reason Extraction
 def get_bye_reasons(df):
     bye_reasons = df[df['context.method'] == 'BYE'].groupby('context.callID')['context.reasonFromLog'].first().fillna('없음')

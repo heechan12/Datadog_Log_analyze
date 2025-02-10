@@ -3,14 +3,14 @@ import pandas as pd
 from datetime import timedelta
 
 from utils.CONSTANTS import (
-    TB_Name_BYE_REASON, TB_Name_CAPTURE_CALLBACK, TB_Name_FIRST_RX, TB_Name_CALL_DURATION,
+    TB_Name_BYE_REASON, TB_Name_CAPTURE_CALLBACK, TB_Name_FIRST_RX, TB_Name_CALL_DURATION, TB_Name_CALL_START_TIME,
     TB_Name_RECENT_HEALTH_CHECK, TB_Name_SRTP_ERROR, PG_Name_LOG_ANALYSIS, CSV_FILE_UPLOAD,
-    TB_Name_STOP_HOLEPUNCHING_CODE, TITLE_BYE_REASON_ANALYSIS, TITLE_FILTERED_DATA, TITLE_DEFAULT_DATA
+    TB_Name_STOP_HOLEPUNCHING_CODE, TITLE_BYE_REASON_ANALYSIS, TITLE_FILTERED_DATA, TITLE_DEFAULT_DATA, TB_Name_CALL_END_REASON
 )
 from utils.sequence_diagram import generate_plantuml_sequence, render_plantuml
 from utils.log_analyzer import (
     get_call_duration, get_recent_healthcheck_counts, get_srtp_error_count,
-    get_bye_reasons, get_stopholepunching_code
+    get_bye_reasons, get_stopholepunching_code, get_call_end_reasons
 )
 
 
@@ -36,6 +36,8 @@ def display_call_analysis_table(df):
 
     df = filter_valid_call_ids(df)
 
+    call_start_time = df[df['context.method'] == 'INVITE'].groupby('context.callID')['timestamp'].first().dt.strftime('%m-%d %H:%M:%S')
+    # call_end_reasons = get_call_end_reasons(df)   <- method 상세 확인 필요 (CANCEL, BYE, 603 Decline)
     call_duration = get_call_duration(df).fillna('분석 불가')
     capture_callback_count = df[df['context.method'] == 'CaptureCallback'].groupby('context.callID').size() \
                                   .reindex(df['context.callID'].unique(), fill_value=0)
@@ -49,7 +51,9 @@ def display_call_analysis_table(df):
     bye_reasons = get_bye_reasons(df).reindex(call_duration.index, fill_value='없음')
 
     # DataFrame 생성 시 모든 데이터를 1D로 보장
-    rtp_analysis = pd.DataFrame({
+    call_analysis_table = pd.DataFrame({
+        TB_Name_CALL_START_TIME: call_start_time,
+        # TB_Name_CALL_END_REASON: call_end_reasons,
         TB_Name_BYE_REASON: bye_reasons,
         TB_Name_CAPTURE_CALLBACK: capture_callback_count,
         TB_Name_FIRST_RX: first_rx_count,
@@ -59,7 +63,7 @@ def display_call_analysis_table(df):
         TB_Name_STOP_HOLEPUNCHING_CODE: stop_holepunching_code.astype(str)
     })
 
-    st.write(rtp_analysis)
+    st.write(call_analysis_table)
 
     # Call Flow 분석
     with st.expander("### Call Flow 분석 (시퀀스 다이어그램)", expanded=False):
@@ -119,13 +123,13 @@ def log_analysis_page():
         '''
         통화 종료 분석 테이블 영역
         '''
-        with st.container():
+        with st.container(border=True):
             display_call_analysis_table(df)
 
         '''
         필터링 된 데이터 영역
         '''
-        with st.container():
+        with st.container(border=True):
             st.subheader(f":orange-background[*{TITLE_FILTERED_DATA}*]")
 
             # 시간 필터링 위젯 추가
@@ -151,7 +155,7 @@ def log_analysis_page():
         '''
         기본 데이터 영역
         '''
-        with st.container():
+        with st.container(border=True):
             st.subheader(f":orange-background[*{TITLE_DEFAULT_DATA}*]")
             st.write(df[columns_to_show])
 
