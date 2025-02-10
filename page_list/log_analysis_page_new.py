@@ -36,8 +36,9 @@ def display_call_analysis_table(df):
 
     df = filter_valid_call_ids(df)
 
+    # call_id_info = get_call_id_info(df)
     call_start_time = df[df['context.method'] == 'INVITE'].groupby('context.callID')['timestamp'].first().dt.strftime('%m-%d %H:%M:%S')
-    # call_end_reasons = get_call_end_reasons(df)   <- method 상세 확인 필요 (CANCEL, BYE, 603 Decline)
+    call_end_reasons = get_call_end_reasons(df) 
     call_duration = get_call_duration(df).fillna('분석 불가')
     capture_callback_count = df[df['context.method'] == 'CaptureCallback'].groupby('context.callID').size() \
                                   .reindex(df['context.callID'].unique(), fill_value=0)
@@ -48,13 +49,14 @@ def display_call_analysis_table(df):
     healthcheck_series = get_recent_healthcheck_counts(df)  # 이미 1D로 반환됨
     stop_holepunching_code = get_stopholepunching_code(df)  # 이미 1D로 반환됨
     srtp_error_count = get_srtp_error_count(df).reindex(call_duration.index, fill_value=0)
-    bye_reasons = get_bye_reasons(df).reindex(call_duration.index, fill_value='없음')
+    # bye_reasons = get_bye_reasons(df).reindex(call_duration.index, fill_value='없음')
 
     # DataFrame 생성 시 모든 데이터를 1D로 보장
     call_analysis_table = pd.DataFrame({
+        # "TB_Name_CALL_ID_INFO": call_id_info,
         TB_Name_CALL_START_TIME: call_start_time,
-        # TB_Name_CALL_END_REASON: call_end_reasons,
-        TB_Name_BYE_REASON: bye_reasons,
+        TB_Name_CALL_END_REASON: call_end_reasons,
+        # TB_Name_BYE_REASON: bye_reasons,
         TB_Name_CAPTURE_CALLBACK: capture_callback_count,
         TB_Name_FIRST_RX: first_rx_count,
         TB_Name_CALL_DURATION: call_duration.astype(str),

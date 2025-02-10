@@ -1,6 +1,37 @@
 import pandas as pd
 from utils.CONSTANTS import TB_Name_RECENT_HEALTH_CHECK
 
+# Call ID 기준으로 INVITE 가 포함되어 있는지, REGISTER 가 포함되어 있는지 확인
+# if INVITE 가 포함되어 있으면 return call 
+# if REGISTER 가 포함되어 있으면 return register 
+# if 둘 다 포함되어 있으면 return both
+# 그 외 return none
+# def get_call_id_info(df):
+#     # 각 callID에 대해 INVITE와 REGISTER 메시지 포함 여부 확인
+#     call_info = df.groupby('context.callID')['context.method'].apply(lambda x: {
+#         'INVITE': 'INVITE' in x.values,
+#         'REGISTER': 'REGISTER' in x.values
+#     })
+
+#     # 결과를 저장할 Series 생성
+#     result = pd.Series(index=call_info.index)
+
+#     for call_id, info in call_info.items():
+#         if isinstance(info, dict):  # info가 딕셔너리인지 확인
+#             if info['INVITE'] and info['REGISTER']:
+#                 result[call_id] = 'both'
+#             elif info['INVITE']:
+#                 result[call_id] = 'call'
+#             elif info['REGISTER']:
+#                 result[call_id] = 'register'
+#             else:
+#                 result[call_id] = 'none'
+#         else:
+#             result[call_id] = 'none'  # info가 딕셔너리가 아닐 경우 처리
+
+#     return result
+
+
 # Updated Call Duration Calculation with Debugging
 def get_call_duration(df, unmatched_value='매칭되지 않음'):
     # Filter for start and stop events
@@ -57,12 +88,13 @@ def get_srtp_error_count(df):
 # cursor ai
 def get_call_end_reasons(df):
     # 각 통화 종료 유형별로 데이터 추출
-    cancel_calls = df[df['context.method'] == 'CANCEL'].groupby('context.callID')['timestamp'].first()
-    decline_calls = df[df['Resource Url'].str.contains('603 Decline', na=False)].groupby('context.callID')['timestamp'].first()
+    cancel_calls = df[df['context.method'] == 'CANCEL'].groupby('context.callID')['timestamp'].first().dt.tz_localize(None)
+    decline_calls = df[df['Resource Url'].str.contains('603 Decline', na=False)].groupby('context.callID')['timestamp'].first().dt.tz_localize(None)
     bye_calls = df[df['context.method'] == 'BYE'].groupby('context.callID').agg({
         'timestamp': 'first',
         'context.reasonFromLog': 'first'
     })
+    bye_calls['timestamp'] = bye_calls['timestamp'].dt.tz_localize(None)  # BYE 타임스탬프도 tz-naive로 변환
 
     # 결과를 저장할 Series 생성
     all_call_ids = df['context.callID'].unique()
@@ -84,7 +116,7 @@ def get_call_end_reasons(df):
         if call_id in decline_calls:
             decline_time = decline_calls[call_id]
             if decline_time < reason_time:
-                reason = '603 Decline'
+                reason = 'DECLINED'
                 reason_time = decline_time
 
         # BYE 체크
