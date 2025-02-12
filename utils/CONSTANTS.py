@@ -26,8 +26,9 @@ DF_Name_RESOURCE_URL = 'Resource Url'
 TITLE_BYE_REASON_ANALYSIS = "통화 종료 (BYE) 분석"
 TITLE_FILTERED_DATA = "필터링 된 데이터"
 TITLE_DEFAULT_DATA = "선택한 열 데이터 (전체 로그)"
-TITLE_RTPTIMEOUT_PER_USER_ID = "User ID 별 RTP Timeout 개수"
-TITLE_RTPTIMEOUT_PER_APP_VERSION = "앱 버전 별 RTP Timeout 개수"
+TITLE_ANALYSIS_RESULT_PER_USER_ID = "User ID 별 개수"
+TITLE_ANALYSIS_RESULT_PER_APP_VERSION = "앱 버전 별 개수"
+TITLE_ANALYSIS_RESULT_PER_OS_VERSION = "OS 버전 별 개수"
 
 def custom_divider(border_Size, color) :
     divider = st.markdown(f"""
