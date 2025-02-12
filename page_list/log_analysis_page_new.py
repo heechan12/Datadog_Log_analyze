@@ -10,7 +10,7 @@ from utils.CONSTANTS import (
 from utils.sequence_diagram import generate_plantuml_sequence, render_plantuml
 from utils.log_analyzer import (
     get_call_duration, get_recent_healthcheck_counts, get_srtp_error_count,
-    get_bye_reasons, get_stopholepunching_code, get_call_end_reasons
+    get_bye_reasons, get_stopholepunching_code, get_call_end_reasons, get_capture_callback_count
 )
 
 '''
@@ -44,9 +44,7 @@ def display_call_analysis_table(df):
     call_start_time = df[df['context.method'] == 'INVITE'].groupby('context.callID')['timestamp'].first().dt.strftime('%m-%d %H:%M:%S')
     call_end_reasons = get_call_end_reasons(df) 
     call_duration = get_call_duration(df).fillna('분석 불가')
-    # TODO : 함수로 빼내고, table 에서는 5 이상인 경우 강조하기 
-    capture_callback_count = df[df['context.method'] == 'CaptureCallback'].groupby('context.callID').size() \
-                                  .reindex(df['context.callID'].unique(), fill_value=0)
+    capture_callback_count = get_capture_callback_count(df).reindex(df['context.callID'].unique(), fill_value=0)
 
     first_rx_count = df[df['Resource Url'].str.contains('firstRx', na=False)].groupby('context.callID').size() \
                      .reindex(df['context.callID'].unique(), fill_value=0)
@@ -70,7 +68,15 @@ def display_call_analysis_table(df):
         TB_Name_STOP_HOLEPUNCHING_CODE: stop_holepunching_code.astype(str)
     })
 
-    st.write(call_analysis_table)
+    # Table 강조
+    # Styler를 사용하여 강조 표시
+    styled_table = call_analysis_table.style.applymap(
+        lambda x: 'background-color: yellow' if isinstance(x, int) and x >= 5 else '',
+        subset=[TB_Name_CAPTURE_CALLBACK]
+    )
+
+    # st.write(call_analysis_table)
+    st.write(styled_table)
 
     # Call Flow 분석
     with st.expander("### Call Flow 분석 (시퀀스 다이어그램)", expanded=False):

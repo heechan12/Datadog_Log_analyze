@@ -64,7 +64,12 @@ def get_call_duration(df, unmatched_value='매칭되지 않음'):
 
     return duration_with_unmatched
 
-
+def get_capture_callback_count(df):
+    """
+    CaptureCallback 메시지의 수를 각 callID별로 계산합니다.
+    """
+    capture_callback_count = df[df['context.method'] == 'CaptureCallback'].groupby('context.callID').size()
+    return capture_callback_count
 
 # Optimized HealthCheck Counts per Call ID
 # Fixed reindex and data conversion issues
