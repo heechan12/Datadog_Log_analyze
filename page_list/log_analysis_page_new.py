@@ -13,6 +13,10 @@ from utils.log_analyzer import (
     get_bye_reasons, get_stopholepunching_code, get_call_end_reasons
 )
 
+'''
+TODO : 딥러닝 기반으로 로그 분석
+CHECKLIST : 변수명, 함수명 정리
+'''
 
 def load_and_process(file):
     # CSV 파일 읽고 시간 변환 및 URL 처리
@@ -70,6 +74,7 @@ def display_call_analysis_table(df):
     # Call Flow 분석
     with st.expander("### Call Flow 분석 (시퀀스 다이어그램)", expanded=False):
         call_ids = df['context.callID'].dropna().unique()
+        # TODO : display_call_analysis_table 에서 선택된 call_id 를 가져오도록 수정
         selected_call_id = st.radio("Call ID 선택", options=call_ids)
         st.write(f"선택된 Call ID: {selected_call_id}")
 

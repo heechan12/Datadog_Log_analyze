@@ -1,6 +1,8 @@
 import pandas as pd
 from utils.CONSTANTS import TB_Name_RECENT_HEALTH_CHECK
 
+# TODO : CALL ID 별로 REGISTER 목적의 CAll ID 인지, INVITE 목적의 CAll ID 인지 구분
+
 # Call ID 기준으로 INVITE 가 포함되어 있는지, REGISTER 가 포함되어 있는지 확인
 # if INVITE 가 포함되어 있으면 return call 
 # if REGISTER 가 포함되어 있으면 return register 
