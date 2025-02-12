@@ -44,6 +44,7 @@ def display_call_analysis_table(df):
     call_start_time = df[df['context.method'] == 'INVITE'].groupby('context.callID')['timestamp'].first().dt.strftime('%m-%d %H:%M:%S')
     call_end_reasons = get_call_end_reasons(df) 
     call_duration = get_call_duration(df).fillna('분석 불가')
+    # TODO : 함수로 빼내고, table 에서는 5 이상인 경우 강조하기 
     capture_callback_count = df[df['context.method'] == 'CaptureCallback'].groupby('context.callID').size() \
                                   .reindex(df['context.callID'].unique(), fill_value=0)
 
