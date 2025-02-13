@@ -1,7 +1,6 @@
 import pandas as pd
 from utils.CONSTANTS import TB_Name_RECENT_HEALTH_CHECK
 
-
 # TODO : CALL ID 별로 REGISTER 목적의 CAll ID 인지, INVITE 목적의 CAll ID 인지 구분
 # TODO : Audio Session Routed 분석 추가
 
@@ -39,12 +38,8 @@ from utils.CONSTANTS import TB_Name_RECENT_HEALTH_CHECK
 # Updated Call Duration Calculation with Debugging
 def get_call_duration(df, unmatched_value='매칭되지 않음'):
     # Filter for start and stop events
-    start_calls = \
-    df[df['Resource Url'].str.contains('res/ENGINE_startCall', case=False, na=False)].groupby('context.callID')[
-        'timestamp'].min()
-    stop_calls = \
-    df[df['Resource Url'].str.contains('res/ENGINE_stopCall', case=False, na=False)].groupby('context.callID')[
-        'timestamp'].max()
+    start_calls = df[df['Resource Url'].str.contains('res/ENGINE_startCall', case=False, na=False)].groupby('context.callID')['timestamp'].min()
+    stop_calls = df[df['Resource Url'].str.contains('res/ENGINE_stopCall', case=False, na=False)].groupby('context.callID')['timestamp'].max()
 
     # Calculate duration
     call_duration = (stop_calls - start_calls).dt.total_seconds()
@@ -69,14 +64,12 @@ def get_call_duration(df, unmatched_value='매칭되지 않음'):
 
     return duration_with_unmatched
 
-
 def get_capture_callback_count(df):
     """
     CaptureCallback 메시지의 수를 각 callID별로 계산합니다.
     """
     capture_callback_count = df[df['context.method'] == 'CaptureCallback'].groupby('context.callID').size()
     return capture_callback_count
-
 
 # Optimized HealthCheck Counts per Call ID
 # Fixed reindex and data conversion issues
@@ -88,28 +81,23 @@ def get_recent_healthcheck_counts(df):
 
     # Call ID별 최근 5개 HealthCheck 추출 후 소수점 제거 및 1D 변환
     recent_counts = healthcheck_df.groupby('context.callID')['@context.totalCount'] \
-        .apply(lambda x: ', '.join(map(lambda y: str(int(float(y))), x.sort_values(ascending=False).head(5)))) \
-        .reindex(df['context.callID'].unique(), fill_value='없음')
+                                  .apply(lambda x: ', '.join(map(lambda y: str(int(float(y))), x.sort_values(ascending=False).head(5)))) \
+                                  .reindex(df['context.callID'].unique(), fill_value='없음')
 
     return recent_counts
 
 
 # SRTP Error Count Calculation
 def get_srtp_error_count(df):
-    srtp_error_count = df[
-        df['Resource Url'].str.contains('res/ENGINE_errorSrtpDepacketizer', case=False, na=False)].groupby(
-        'context.callID').size()
+    srtp_error_count = df[df['Resource Url'].str.contains('res/ENGINE_errorSrtpDepacketizer', case=False, na=False)].groupby('context.callID').size()
     return srtp_error_count
-
 
 # Call End Reason Extraction
 # cursor ai
 def get_call_end_reasons(df):
     # 각 통화 종료 유형별로 데이터 추출
-    cancel_calls = df[df['context.method'] == 'CANCEL'].groupby('context.callID')['timestamp'].first().dt.tz_localize(
-        None)
-    decline_calls = df[df['Resource Url'].str.contains('603 Decline', na=False)].groupby('context.callID')[
-        'timestamp'].first().dt.tz_localize(None)
+    cancel_calls = df[df['context.method'] == 'CANCEL'].groupby('context.callID')['timestamp'].first().dt.tz_localize(None)
+    decline_calls = df[df['Resource Url'].str.contains('603 Decline', na=False)].groupby('context.callID')['timestamp'].first().dt.tz_localize(None)
     bye_calls = df[df['context.method'] == 'BYE'].groupby('context.callID').agg({
         'timestamp': 'first',
         'context.reasonFromLog': 'first'
@@ -150,13 +138,10 @@ def get_call_end_reasons(df):
 
     return end_reasons
 
-
 # BYE Reason Extraction
 def get_bye_reasons(df):
-    bye_reasons = df[df['context.method'] == 'BYE'].groupby('context.callID')['context.reasonFromLog'].first().fillna(
-        '없음')
+    bye_reasons = df[df['context.method'] == 'BYE'].groupby('context.callID')['context.reasonFromLog'].first().fillna('없음')
     return bye_reasons
-
 
 # Stop Holepunching Code Extraction
 def get_stopholepunching_code(df):
@@ -167,7 +152,7 @@ def get_stopholepunching_code(df):
 
     # Call ID별 가장 최근 코드를 추출하고 1D로 변환
     stop_holepunching_code = stop_holepunching_df.groupby('context.callID')['context.code'] \
-        .last() \
-        .reindex(df['context.callID'].unique(), fill_value='없음')
+                                                 .last() \
+                                                 .reindex(df['context.callID'].unique(), fill_value='없음')
 
     return stop_holepunching_code
