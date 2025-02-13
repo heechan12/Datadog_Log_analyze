@@ -71,7 +71,7 @@ def display_call_analysis_table(df):
     # Table 강조
     # Styler를 사용하여 강조 표시
     styled_table = call_analysis_table.style.applymap(
-        lambda x: 'background-color: yellow' if isinstance(x, int) and x >= 5 else '',
+        lambda x: 'background-color: yellow' if isinstance(x, int) and x >= 3 else '',
         subset=[TB_Name_CAPTURE_CALLBACK]
     )
 
