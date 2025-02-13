@@ -5,7 +5,8 @@ from datetime import timedelta
 from utils.CONSTANTS import (
     TB_Name_BYE_REASON, TB_Name_CAPTURE_CALLBACK, TB_Name_FIRST_RX, TB_Name_CALL_DURATION, TB_Name_CALL_START_TIME,
     TB_Name_RECENT_HEALTH_CHECK, TB_Name_SRTP_ERROR, PG_Name_LOG_ANALYSIS, CSV_FILE_UPLOAD,
-    TB_Name_STOP_HOLEPUNCHING_CODE, TITLE_BYE_REASON_ANALYSIS, TITLE_FILTERED_DATA, TITLE_DEFAULT_DATA, TB_Name_CALL_END_REASON
+    TB_Name_STOP_HOLEPUNCHING_CODE, TITLE_BYE_REASON_ANALYSIS, TITLE_FILTERED_DATA, TITLE_DEFAULT_DATA,
+    TB_Name_CALL_END_REASON
 )
 from utils.sequence_diagram import generate_plantuml_sequence, render_plantuml
 from utils.log_analyzer import (
@@ -18,9 +19,11 @@ TODO : 딥러닝 기반으로 로그 분석
 CHECKLIST : 변수명, 함수명 정리
 '''
 
+
 def load_and_process(file):
     # CSV 파일 읽고 시간 변환 및 URL 처리
     df = pd.read_csv(file)
+
     df['timestamp'] = pd.to_datetime(df['timestamp'], format='%Y-%m-%dT%H:%M:%S.%fZ', errors='coerce').dt.tz_localize(
         'UTC').dt.tz_convert('Asia/Seoul')
     df['Date'] = pd.to_datetime(df['Date'], format='%Y-%m-%dT%H:%M:%S.%fZ', errors='coerce').dt.tz_localize(
@@ -41,13 +44,14 @@ def display_call_analysis_table(df):
     df = filter_valid_call_ids(df)
 
     # call_id_info = get_call_id_info(df)
-    call_start_time = df[df['context.method'] == 'INVITE'].groupby('context.callID')['timestamp'].first().dt.strftime('%m-%d %H:%M:%S')
-    call_end_reasons = get_call_end_reasons(df) 
+    call_start_time = df[df['context.method'] == 'INVITE'].groupby('context.callID')['timestamp'].first().dt.strftime(
+        '%m-%d %H:%M:%S')
+    call_end_reasons = get_call_end_reasons(df)
     call_duration = get_call_duration(df).fillna('분석 불가')
     capture_callback_count = get_capture_callback_count(df).reindex(df['context.callID'].unique(), fill_value=0)
 
     first_rx_count = df[df['Resource Url'].str.contains('firstRx', na=False)].groupby('context.callID').size() \
-                     .reindex(df['context.callID'].unique(), fill_value=0)
+        .reindex(df['context.callID'].unique(), fill_value=0)
 
     healthcheck_series = get_recent_healthcheck_counts(df)  # 이미 1D로 반환됨
     stop_holepunching_code = get_stopholepunching_code(df)  # 이미 1D로 반환됨

@@ -10,6 +10,7 @@ def load_and_process(file):
     df = pd.read_csv(file)
     return df
 
+
 def user_version_analysis_page():
     st.title(PG_Name_USER_VERSION)
 
@@ -30,7 +31,7 @@ def user_version_analysis_page():
 
         user_id_col, app_version_col, os_version_col = st.columns(3)
 
-        with user_id_col :
+        with user_id_col:
             # User Id 별 개수 분석
             st.subheader(f":orange-background[*{TITLE_ANALYSIS_RESULT_PER_USER_ID}*]")
             if 'User Id' in df.columns:
@@ -46,7 +47,7 @@ def user_version_analysis_page():
             else:
                 st.warning("User Id 열이 없습니다.")
 
-        with app_version_col :
+        with app_version_col:
             # 앱 버전 별 개수 분석
             st.subheader(f":orange-background[*{TITLE_ANALYSIS_RESULT_PER_APP_VERSION}*]")
             if 'Version' in df.columns:
@@ -55,10 +56,9 @@ def user_version_analysis_page():
                 app_version_counts.columns = ['버전', '개수']
                 st.table(app_version_counts)
 
-                
                 print(app_version_data)
                 with elements("nivo"):
-                    with mui.Box(sx={"Height":10}):
+                    with mui.Box(sx={"Height": 10}):
                         nivo.Pie(
                             data=app_version_data,
                         )
@@ -66,9 +66,7 @@ def user_version_analysis_page():
             else:
                 st.warning("Version 열이 없습니다.")
 
-
-
-        with os_version_col :
+        with os_version_col:
             st.subheader(f":orange-background[*{TITLE_ANALYSIS_RESULT_PER_OS_VERSION}*]")
             if "OS Version" in df.columns:
                 os_version_counts = df['OS Version'].value_counts().reset_index()
@@ -77,7 +75,6 @@ def user_version_analysis_page():
                 # st.bar_chart(version_counts.set_index('버전')['개수'])
             else:
                 st.warning("OS Version 열이 없습니다.")
-
 
 
 if __name__ == "__main__":
