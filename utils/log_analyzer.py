@@ -1,7 +1,45 @@
 import pandas as pd
+import streamlit as st
+import time
 from utils.CONSTANTS import TB_Name_RECENT_HEALTH_CHECK
 
 # TODO : CALL ID 별로 REGISTER 목적의 CAll ID 인지, INVITE 목적의 CAll ID 인지 구분
+# FIXME : 누락되는 케이스가 있음
+def classify_sessions(df):
+    """
+    callUniqueId를 기준으로 통화 세션을 분류하는 함수.
+    각 callUniqueId의 시작 시간과 종료 시간 사이의 로그를 동일한 세션으로 할당.
+    
+    :param df: DataFrame, 로그 데이터
+    :return: DataFrame, 세션 정보가 추가된 데이터
+    """
+    df = df.copy()
+    df['timestamp'] = pd.to_datetime(df['timestamp'])  # timestamp 컬럼을 datetime 형식으로 변환
+    df = df.sort_values(by=['timestamp'])  # 시간 순으로 정렬
+    
+    session_id = 0  # 세션 ID 초기화
+    df['session_id'] = None  # 새로운 세션 ID 컬럼 추가
+    
+    unique_ids = df['context.callUniqueId'].dropna().unique()
+    
+    for call_id in unique_ids:
+        call_logs = df[df['context.callUniqueId'] == call_id]
+        if call_logs.empty:
+            continue
+        
+        start_time = call_logs['timestamp'].min()
+        end_time = call_logs['timestamp'].max()
+        
+        # 해당 callUniqueId의 시작-종료 시간 사이에 존재하는 모든 로그에 같은 session_id 할당
+        df.loc[(df['timestamp'] >= start_time) & (df['timestamp'] <= end_time), 'session_id'] = session_id
+        session_id += 1  # 다음 세션을 위해 ID 증가
+    
+    df['session_id'] = df['session_id'].astype('Int64')  # 세션 ID 정수형 변환
+    df.to_csv("assets/temp.csv")
+    print("저장 완료")
+    return df
+    
+
 # TODO : Audio Session Routed 분석 추가
 
 # Call ID 기준으로 INVITE 가 포함되어 있는지, REGISTER 가 포함되어 있는지 확인
@@ -58,9 +96,11 @@ def get_call_duration(df, unmatched_value='매칭되지 않음'):
     missing_starts = set(stop_calls.index) - set(start_calls.index)
     missing_stops = set(start_calls.index) - set(stop_calls.index)
     if missing_starts:
-        print(f"경고: StopCall 이벤트에 매칭되지 않은 Call ID: {missing_starts}")
+        st.toast(f"⚠️ StopCall 이벤트에 매칭되지 않은 Call ID: {missing_starts}")
+        time.sleep(.5)
     if missing_stops:
-        print(f"경고: StartCall 이벤트에 매칭되지 않은 Call ID: {missing_stops}")
+        st.toast(f"⚠️ StartCall 이벤트에 매칭되지 않은 Call ID: {missing_stops}")
+        time.sleep(.5)
 
     return duration_with_unmatched
 

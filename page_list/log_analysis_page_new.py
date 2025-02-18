@@ -10,7 +10,7 @@ from utils.CONSTANTS import (
 from utils.sequence_diagram import generate_plantuml_sequence, render_plantuml
 from utils.log_analyzer import (
     get_call_duration, get_recent_healthcheck_counts, get_srtp_error_count,
-    get_bye_reasons, get_stopholepunching_code, get_call_end_reasons, get_capture_callback_count
+    get_bye_reasons, get_stopholepunching_code, get_call_end_reasons, get_capture_callback_count, classify_sessions
 )
 
 '''
@@ -26,6 +26,7 @@ def load_and_process(file):
     df['Date'] = pd.to_datetime(df['Date'], format='%Y-%m-%dT%H:%M:%S.%fZ', errors='coerce').dt.tz_localize(
         'UTC').dt.tz_convert('Asia/Seoul')
     df['Resource Url'] = df['Resource Url'].str.replace('https://aicall-lgu.com/', '', regex=False)
+    classify_sessions(df)
     return df
 
 
