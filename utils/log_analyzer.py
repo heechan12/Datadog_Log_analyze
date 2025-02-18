@@ -106,14 +106,19 @@ def get_call_duration(df, unmatched_value='매칭되지 않음'):
 
 def get_capture_callback_count(df):
     """
-    CaptureCallback 메시지의 수를 각 callID별로 계산합니다.
+    CaptureCallback 메시지의 수를 각 callID 별로 계산합니다.
+    :param df:
+    :return: call id 별 capture callback 수
     """
     capture_callback_count = df[df['context.method'] == 'CaptureCallback'].groupby('context.callID').size()
     return capture_callback_count
 
-# Optimized HealthCheck Counts per Call ID
-# Fixed reindex and data conversion issues
 def get_recent_healthcheck_counts(df):
+    """
+
+    :param df:
+    :return: call id 별 healthcheck 수
+    """
     healthcheck_df = df[df['Resource Url'].str.contains('res/ENGINE_ReceiveHealthCheck', case=False, na=False)]
 
     if '@context.totalCount' not in df.columns:
@@ -127,14 +132,22 @@ def get_recent_healthcheck_counts(df):
     return recent_counts
 
 
-# SRTP Error Count Calculation
 def get_srtp_error_count(df):
+    """
+
+    :param df:
+    :return: call id 별 SRTP Error Count 수
+    """
     srtp_error_count = df[df['Resource Url'].str.contains('res/ENGINE_errorSrtpDepacketizer', case=False, na=False)].groupby('context.callID').size()
     return srtp_error_count
 
-# Call End Reason Extraction
-# cursor ai
+
 def get_call_end_reasons(df):
+    """
+
+    :param df:
+    :return: call id 별 통화 종료 사유(CANCEL, DECLINE, BYE)
+    """
     # 각 통화 종료 유형별로 데이터 추출
     cancel_calls = df[df['context.method'] == 'CANCEL'].groupby('context.callID')['timestamp'].first().dt.tz_localize(None)
     decline_calls = df[df['Resource Url'].str.contains('603 Decline', na=False)].groupby('context.callID')['timestamp'].first().dt.tz_localize(None)
@@ -178,13 +191,23 @@ def get_call_end_reasons(df):
 
     return end_reasons
 
-# BYE Reason Extraction
+
 def get_bye_reasons(df):
+    """
+
+    :param df:
+    :return: BYE Reason
+    """
     bye_reasons = df[df['context.method'] == 'BYE'].groupby('context.callID')['context.reasonFromLog'].first().fillna('없음')
     return bye_reasons
 
-# Stop Holepunching Code Extraction
+
 def get_stopholepunching_code(df):
+    """
+
+    :param df:
+    :return: call id 별 stop holepunching code
+    """
     stop_holepunching_df = df[df['Resource Url'].str.contains('res/ENGINE_stopHolePunching', case=False, na=False)]
 
     if 'context.code' not in df.columns:
