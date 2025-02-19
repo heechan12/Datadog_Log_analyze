@@ -1,7 +1,58 @@
 import pandas as pd
+import streamlit as st
+import time
 from utils.CONSTANTS import TB_Name_RECENT_HEALTH_CHECK
 
 # TODO : CALL ID 별로 REGISTER 목적의 CAll ID 인지, INVITE 목적의 CAll ID 인지 구분
+# CHECKLIST : 간단하게 기존 함수들처럼 REGISTER, INVITE 포함 여부로 판단해도 될듯?
+def classify_call_id_type(df):
+    # 만약 call id 에 thhsdcyb 가 포함되어 있으면 -> 착신 통화
+    # 아니면 -> 
+    #   context.method 에 INVITE, BYE, DECLINE, UPDATE 등이 있으면 발신 통화
+    #   context.method 에 REGISTER 가 있으면 REGISTER
+    # Pandas 로 분리
+    call_type_register = df[df['context.method'].str.contains('REGISTER', case=False, na=False)].groupby('context.callID')
+    
+    return
+
+
+# NOTE : 단순 테스트 용도
+# FIXME : 누락되는 케이스가 있음
+def classify_sessions(df):
+    """
+    callUniqueId를 기준으로 통화 세션을 분류하는 함수.
+    각 callUniqueId의 시작 시간과 종료 시간 사이의 로그를 동일한 세션으로 할당.
+    
+    :param df: DataFrame, 로그 데이터
+    :return: DataFrame, 세션 정보가 추가된 데이터
+    """
+    df = df.copy()
+    df['timestamp'] = pd.to_datetime(df['timestamp'])  # timestamp 컬럼을 datetime 형식으로 변환
+    df = df.sort_values(by=['timestamp'])  # 시간 순으로 정렬
+    
+    session_id = 0  # 세션 ID 초기화
+    df['session_id'] = None  # 새로운 세션 ID 컬럼 추가
+    
+    unique_ids = df['context.callUniqueId'].dropna().unique()
+    
+    for call_id in unique_ids:
+        call_logs = df[df['context.callUniqueId'] == call_id]
+        if call_logs.empty:
+            continue
+        
+        start_time = call_logs['timestamp'].min()
+        end_time = call_logs['timestamp'].max()
+        
+        # 해당 callUniqueId의 시작-종료 시간 사이에 존재하는 모든 로그에 같은 session_id 할당
+        df.loc[(df['timestamp'] >= start_time) & (df['timestamp'] <= end_time), 'session_id'] = session_id
+        session_id += 1  # 다음 세션을 위해 ID 증가
+    
+    df['session_id'] = df['session_id'].astype('Int64')  # 세션 ID 정수형 변환
+    df.to_csv("assets/temp.csv")
+    print("저장 완료")
+    return df
+    
+
 # TODO : Audio Session Routed 분석 추가
 
 # Call ID 기준으로 INVITE 가 포함되어 있는지, REGISTER 가 포함되어 있는지 확인
@@ -35,13 +86,13 @@ from utils.CONSTANTS import TB_Name_RECENT_HEALTH_CHECK
 #     return result
 
 
-# Updated Call Duration Calculation with Debugging
 def get_call_duration(df, unmatched_value='매칭되지 않음'):
-    # Filter for start and stop events
+    """
+    call id 별 ENGINE_startCall ~ ENGINE_stopCall 까지의 시간 측정
+    """
     start_calls = df[df['Resource Url'].str.contains('res/ENGINE_startCall', case=False, na=False)].groupby('context.callID')['timestamp'].min()
     stop_calls = df[df['Resource Url'].str.contains('res/ENGINE_stopCall', case=False, na=False)].groupby('context.callID')['timestamp'].max()
 
-    # Calculate duration
     call_duration = (stop_calls - start_calls).dt.total_seconds()
 
     # pd.NaT가 있는 경우 "분석 불가"로 대체
@@ -54,26 +105,33 @@ def get_call_duration(df, unmatched_value='매칭되지 않음'):
     # 매칭되지 않은 경우 특정 값을 설정
     duration_with_unmatched = duration_with_unmatched.fillna(unmatched_value)
 
-    # Debugging info for mismatches
+    # 매칭되지 않은 부분 디버깅 용도
     missing_starts = set(stop_calls.index) - set(start_calls.index)
     missing_stops = set(start_calls.index) - set(stop_calls.index)
     if missing_starts:
-        print(f"경고: StopCall 이벤트에 매칭되지 않은 Call ID: {missing_starts}")
+        st.toast(f"⚠️ StopCall 이벤트에 매칭되지 않은 Call ID: {missing_starts}")
+        time.sleep(.5)
     if missing_stops:
-        print(f"경고: StartCall 이벤트에 매칭되지 않은 Call ID: {missing_stops}")
+        st.toast(f"⚠️ StartCall 이벤트에 매칭되지 않은 Call ID: {missing_stops}")
+        time.sleep(.5)
 
     return duration_with_unmatched
 
 def get_capture_callback_count(df):
     """
-    CaptureCallback 메시지의 수를 각 callID별로 계산합니다.
+    CaptureCallback 메시지의 수를 각 callID 별로 계산합니다.
+    :param df:
+    :return: call id 별 capture callback 수
     """
     capture_callback_count = df[df['context.method'] == 'CaptureCallback'].groupby('context.callID').size()
     return capture_callback_count
 
-# Optimized HealthCheck Counts per Call ID
-# Fixed reindex and data conversion issues
 def get_recent_healthcheck_counts(df):
+    """
+
+    :param df:
+    :return: call id 별 healthcheck 수
+    """
     healthcheck_df = df[df['Resource Url'].str.contains('res/ENGINE_ReceiveHealthCheck', case=False, na=False)]
 
     if '@context.totalCount' not in df.columns:
@@ -87,17 +145,36 @@ def get_recent_healthcheck_counts(df):
     return recent_counts
 
 
-# SRTP Error Count Calculation
 def get_srtp_error_count(df):
+    """
+
+    :param df:
+    :return: call id 별 SRTP Error Count 수
+    """
     srtp_error_count = df[df['Resource Url'].str.contains('res/ENGINE_errorSrtpDepacketizer', case=False, na=False)].groupby('context.callID').size()
     return srtp_error_count
 
-# Call End Reason Extraction
-# cursor ai
+
 def get_call_end_reasons(df):
+    """
+
+    :param df:
+    :return: call id 별 통화 종료 사유(CANCEL, DECLINE, BYE)
+    """
     # 각 통화 종료 유형별로 데이터 추출
-    cancel_calls = df[df['context.method'] == 'CANCEL'].groupby('context.callID')['timestamp'].first().dt.tz_localize(None)
-    decline_calls = df[df['Resource Url'].str.contains('603 Decline', na=False)].groupby('context.callID')['timestamp'].first().dt.tz_localize(None)
+    cancel_calls = df[df['context.method'] == 'CANCEL'].groupby('context.callID').agg({
+        'timestamp': 'first',
+        'context.reasonFromLog': 'first'
+    })
+    cancel_calls['timestamp'] = cancel_calls['timestamp'].dt.tz_localize(None)
+    
+    decline_calls = df[df['context.method'] == 'DECLINED'].groupby('context.callID')['timestamp'].first().dt.tz_localize(None)
+    decline_calls = df[df['context.method'] == 'DECLINED'].groupby('context.callID').agg({
+        'timestamp': 'first',
+        'context.reasonFromLog': 'first'
+    })
+    decline_calls['timestamp'] = decline_calls['timestamp'].dt.tz_localize(None)
+    
     bye_calls = df[df['context.method'] == 'BYE'].groupby('context.callID').agg({
         'timestamp': 'first',
         'context.reasonFromLog': 'first'
@@ -114,17 +191,20 @@ def get_call_end_reasons(df):
         reason_time = pd.Timestamp.max
 
         # CANCEL 체크
-        if call_id in cancel_calls:
-            cancel_time = cancel_calls[call_id]
+        # DONE : BYE 처럼 reason 도  같이 보여주기
+        if call_id in cancel_calls.index:
+            cancel_time = cancel_calls.loc[call_id, 'timestamp']
             if cancel_time < reason_time:
-                reason = 'CANCEL'
+                reason = f"CANCEL ({cancel_calls.loc[call_id, 'context.reasonFromLog']})"
                 reason_time = cancel_time
 
         # 603 Decline 체크
-        if call_id in decline_calls:
-            decline_time = decline_calls[call_id]
+        # DONE : BYE 처럼 reason 도  같이 보여주기
+        if call_id in decline_calls.index:
+            decline_time = decline_calls.loc[call_id, 'timestamp']
             if decline_time < reason_time:
                 reason = 'DECLINED'
+                reason = f"603 DECLINED ({decline_calls.loc[call_id, 'context.reasonFromLog']})"
                 reason_time = decline_time
 
         # BYE 체크
@@ -138,13 +218,23 @@ def get_call_end_reasons(df):
 
     return end_reasons
 
-# BYE Reason Extraction
+
 def get_bye_reasons(df):
+    """
+
+    :param df:
+    :return: BYE Reason
+    """
     bye_reasons = df[df['context.method'] == 'BYE'].groupby('context.callID')['context.reasonFromLog'].first().fillna('없음')
     return bye_reasons
 
-# Stop Holepunching Code Extraction
+
 def get_stopholepunching_code(df):
+    """
+
+    :param df:
+    :return: call id 별 stop holepunching code
+    """
     stop_holepunching_df = df[df['Resource Url'].str.contains('res/ENGINE_stopHolePunching', case=False, na=False)]
 
     if 'context.code' not in df.columns:

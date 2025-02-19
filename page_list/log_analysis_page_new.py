@@ -10,7 +10,7 @@ from utils.CONSTANTS import (
 from utils.sequence_diagram import generate_plantuml_sequence, render_plantuml
 from utils.log_analyzer import (
     get_call_duration, get_recent_healthcheck_counts, get_srtp_error_count,
-    get_bye_reasons, get_stopholepunching_code, get_call_end_reasons, get_capture_callback_count
+    get_bye_reasons, get_stopholepunching_code, get_call_end_reasons, get_capture_callback_count, classify_sessions
 )
 
 '''
@@ -26,6 +26,7 @@ def load_and_process(file):
     df['Date'] = pd.to_datetime(df['Date'], format='%Y-%m-%dT%H:%M:%S.%fZ', errors='coerce').dt.tz_localize(
         'UTC').dt.tz_convert('Asia/Seoul')
     df['Resource Url'] = df['Resource Url'].str.replace('https://aicall-lgu.com/', '', regex=False)
+    classify_sessions(df)
     return df
 
 
@@ -68,12 +69,20 @@ def display_call_analysis_table(df):
         TB_Name_STOP_HOLEPUNCHING_CODE: stop_holepunching_code.astype(str)
     })
 
-    # Table 강조
-    # Styler를 사용하여 강조 표시
+    '''
+    테이블 강조 영역
+    '''
+    # CaptureCallback 수가 3 이상인 경우
     styled_table = call_analysis_table.style.applymap(
-        lambda x: 'background-color: yellow' if isinstance(x, int) and x >= 5 else '',
+        lambda x: 'background-color: yellow' if isinstance(x, int) and x >= 3 else '',
         subset=[TB_Name_CAPTURE_CALLBACK]
     )
+    
+    # RTP Timeout BYE 인 경우
+    styled_table = styled_table.applymap(
+        lambda x: 'background-color: yellow' if isinstance(x, str) and 'rtp' in x.lower() else '',
+        subset=[TB_Name_CALL_END_REASON]
+    )   
 
     # st.write(call_analysis_table)
     st.write(styled_table)

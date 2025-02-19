@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+from streamlit_elements import mui, nivo, elements
 
 from utils.CONSTANTS import PG_Name_USER_VERSION, CSV_FILE_UPLOAD, TITLE_ANALYSIS_RESULT_PER_USER_ID, \
     TITLE_ANALYSIS_RESULT_PER_APP_VERSION, TITLE_ANALYSIS_RESULT_PER_OS_VERSION
@@ -8,6 +9,7 @@ from utils.CONSTANTS import PG_Name_USER_VERSION, CSV_FILE_UPLOAD, TITLE_ANALYSI
 def load_and_process(file):
     df = pd.read_csv(file)
     return df
+
 
 def user_version_analysis_page():
     st.title(PG_Name_USER_VERSION)
@@ -27,15 +29,15 @@ def user_version_analysis_page():
         st.table(summary_table)
         # st.dataframe(summary_table)
 
-        user_id_col, version_col = st.columns(2)
+        user_id_col, app_version_col, os_version_col = st.columns(3)
 
-        with user_id_col :
+        with user_id_col:
             # User Id 별 개수 분석
+            st.subheader(f":orange-background[*{TITLE_ANALYSIS_RESULT_PER_USER_ID}*]")
             if 'User Id' in df.columns:
                 user_counts = df['User Id'].value_counts().reset_index()
                 total_unique_users = df['User Id'].nunique()
                 user_counts.columns = ['User Id', '개수']
-                st.subheader(f":orange-background[*{TITLE_ANALYSIS_RESULT_PER_USER_ID}*]")
                 top_10_users = user_counts.head(10)
                 st.table(top_10_users)
 
@@ -45,28 +47,34 @@ def user_version_analysis_page():
             else:
                 st.warning("User Id 열이 없습니다.")
 
-        with version_col :
+        with app_version_col:
             # 앱 버전 별 개수 분석
+            st.subheader(f":orange-background[*{TITLE_ANALYSIS_RESULT_PER_APP_VERSION}*]")
             if 'Version' in df.columns:
-                version_counts = df['Version'].value_counts().reset_index()
-                version_counts.columns = ['버전', '개수']
-                st.subheader(f":orange-background[*{TITLE_ANALYSIS_RESULT_PER_APP_VERSION}*]")
-                st.table(version_counts)
-                # st.bar_chart(version_counts.set_index('버전')['개수'])
+                app_version_counts = df['Version'].value_counts().reset_index()
+                app_version_data = [{"app_version": version} for version in app_version_counts['Version']]
+                app_version_counts.columns = ['버전', '개수']
+                st.table(app_version_counts)
+
+                print(app_version_data)
+                with elements("nivo"):
+                    with mui.Box(sx={"Height": 10}):
+                        nivo.Pie(
+                            data=app_version_data,
+                        )
+
             else:
                 st.warning("Version 열이 없습니다.")
 
-            st.divider()
-
+        with os_version_col:
+            st.subheader(f":orange-background[*{TITLE_ANALYSIS_RESULT_PER_OS_VERSION}*]")
             if "OS Version" in df.columns:
                 os_version_counts = df['OS Version'].value_counts().reset_index()
                 os_version_counts.columns = ['버전', '개수']
-                st.subheader(f":orange-background[*{TITLE_ANALYSIS_RESULT_PER_OS_VERSION}*]")
                 st.table(os_version_counts)
                 # st.bar_chart(version_counts.set_index('버전')['개수'])
             else:
-                st.warning("Version 열이 없습니다.")
-
+                st.warning("OS Version 열이 없습니다.")
 
 
 if __name__ == "__main__":
