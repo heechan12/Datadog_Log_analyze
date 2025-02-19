@@ -73,16 +73,18 @@ def display_call_analysis_table(df):
     테이블 강조 영역
     '''
     # CaptureCallback 수가 3 이상인 경우
-    styled_table = call_analysis_table.style.applymap(
+    styled_table = call_analysis_table.style.map(
         lambda x: 'background-color: yellow' if isinstance(x, int) and x >= 3 else '',
         subset=[TB_Name_CAPTURE_CALLBACK]
     )
     
     # RTP Timeout BYE 인 경우
-    styled_table = styled_table.applymap(
-        lambda x: 'background-color: yellow' if isinstance(x, str) and 'rtp' in x.lower() else '',
-        subset=[TB_Name_CALL_END_REASON]
-    )   
+    styled_table = styled_table.map(
+        lambda x: 'background-color: yellow' if isinstance(x, str) and 'rtp' in x.lower() else (
+        'background-color: orange' if isinstance(x, str) and 'triggered' not in x.lower() and x != '알 수 없음' else ''
+    ),
+    subset=[TB_Name_CALL_END_REASON]
+    )
 
     # st.write(call_analysis_table)
     st.write(styled_table)
