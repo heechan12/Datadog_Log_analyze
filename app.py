@@ -5,9 +5,7 @@ from utils.CONSTANTS import PG_Name_LOG_ANALYSIS, PG_Name_USER_VERSION, PG_Name_
 
 # 페이지 설정 (여기서 한 번만 호출)
 st.set_page_config(
-    layout="wide",
-    page_title="DataDog 분석 Tool",
-    page_icon=":technologist:"
+    layout="wide", page_title="DataDog 분석 Tool", page_icon=":technologist:"
 )
 
 # 사이드바 메뉴
@@ -25,12 +23,15 @@ with st.sidebar:
 # 페이지 선택에 따라 다른 페이지 호출
 if selected == PG_Name_LOG_ANALYSIS:
     from page_list.log_analysis_page_new import log_analysis_page
+
     log_analysis_page()
 
 elif selected == PG_Name_USER_VERSION:
     from page_list.user_version_analysis_page import user_version_analysis_page
+
     user_version_analysis_page()
 
-elif selected == PG_Name_HOW_TO :
+elif selected == PG_Name_HOW_TO:
     from page_list.readme_page import readme_page
+
     readme_page()
