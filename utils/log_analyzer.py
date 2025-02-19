@@ -4,6 +4,19 @@ import time
 from utils.CONSTANTS import TB_Name_RECENT_HEALTH_CHECK
 
 # TODO : CALL ID 별로 REGISTER 목적의 CAll ID 인지, INVITE 목적의 CAll ID 인지 구분
+# CHECKLIST : 간단하게 기존 함수들처럼 REGISTER, INVITE 포함 여부로 판단해도 될듯?
+def classify_call_id_type(df):
+    # 만약 call id 에 thhsdcyb 가 포함되어 있으면 -> 착신 통화
+    # 아니면 -> 
+    #   context.method 에 INVITE, BYE, DECLINE, UPDATE 등이 있으면 발신 통화
+    #   context.method 에 REGISTER 가 있으면 REGISTER
+    # Pandas 로 분리
+    call_type_register = df[df['context.method'].str.contains('REGISTER', case=False, na=False)].groupby('context.callID')
+    
+    return
+
+
+# NOTE : 단순 테스트 용도
 # FIXME : 누락되는 케이스가 있음
 def classify_sessions(df):
     """
@@ -73,13 +86,13 @@ def classify_sessions(df):
 #     return result
 
 
-# Updated Call Duration Calculation with Debugging
 def get_call_duration(df, unmatched_value='매칭되지 않음'):
-    # Filter for start and stop events
+    """
+    call id 별 ENGINE_startCall ~ ENGINE_stopCall 까지의 시간 측정
+    """
     start_calls = df[df['Resource Url'].str.contains('res/ENGINE_startCall', case=False, na=False)].groupby('context.callID')['timestamp'].min()
     stop_calls = df[df['Resource Url'].str.contains('res/ENGINE_stopCall', case=False, na=False)].groupby('context.callID')['timestamp'].max()
 
-    # Calculate duration
     call_duration = (stop_calls - start_calls).dt.total_seconds()
 
     # pd.NaT가 있는 경우 "분석 불가"로 대체
@@ -92,7 +105,7 @@ def get_call_duration(df, unmatched_value='매칭되지 않음'):
     # 매칭되지 않은 경우 특정 값을 설정
     duration_with_unmatched = duration_with_unmatched.fillna(unmatched_value)
 
-    # Debugging info for mismatches
+    # 매칭되지 않은 부분 디버깅 용도
     missing_starts = set(stop_calls.index) - set(start_calls.index)
     missing_stops = set(start_calls.index) - set(stop_calls.index)
     if missing_starts:
@@ -149,8 +162,19 @@ def get_call_end_reasons(df):
     :return: call id 별 통화 종료 사유(CANCEL, DECLINE, BYE)
     """
     # 각 통화 종료 유형별로 데이터 추출
-    cancel_calls = df[df['context.method'] == 'CANCEL'].groupby('context.callID')['timestamp'].first().dt.tz_localize(None)
-    decline_calls = df[df['Resource Url'].str.contains('603 Decline', na=False)].groupby('context.callID')['timestamp'].first().dt.tz_localize(None)
+    cancel_calls = df[df['context.method'] == 'CANCEL'].groupby('context.callID').agg({
+        'timestamp': 'first',
+        'context.reasonFromLog': 'first'
+    })
+    cancel_calls['timestamp'] = cancel_calls['timestamp'].dt.tz_localize(None)
+    
+    decline_calls = df[df['context.method'] == 'DECLINED'].groupby('context.callID')['timestamp'].first().dt.tz_localize(None)
+    decline_calls = df[df['context.method'] == 'DECLINED'].groupby('context.callID').agg({
+        'timestamp': 'first',
+        'context.reasonFromLog': 'first'
+    })
+    decline_calls['timestamp'] = decline_calls['timestamp'].dt.tz_localize(None)
+    
     bye_calls = df[df['context.method'] == 'BYE'].groupby('context.callID').agg({
         'timestamp': 'first',
         'context.reasonFromLog': 'first'
@@ -167,17 +191,20 @@ def get_call_end_reasons(df):
         reason_time = pd.Timestamp.max
 
         # CANCEL 체크
-        if call_id in cancel_calls:
-            cancel_time = cancel_calls[call_id]
+        # DONE : BYE 처럼 reason 도  같이 보여주기
+        if call_id in cancel_calls.index:
+            cancel_time = cancel_calls.loc[call_id, 'timestamp']
             if cancel_time < reason_time:
-                reason = 'CANCEL'
+                reason = f"CANCEL ({cancel_calls.loc[call_id, 'context.reasonFromLog']})"
                 reason_time = cancel_time
 
         # 603 Decline 체크
-        if call_id in decline_calls:
-            decline_time = decline_calls[call_id]
+        # DONE : BYE 처럼 reason 도  같이 보여주기
+        if call_id in decline_calls.index:
+            decline_time = decline_calls.loc[call_id, 'timestamp']
             if decline_time < reason_time:
                 reason = 'DECLINED'
+                reason = f"603 DECLINED ({decline_calls.loc[call_id, 'context.reasonFromLog']})"
                 reason_time = decline_time
 
         # BYE 체크
