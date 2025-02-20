@@ -19,16 +19,7 @@ from utils.CONSTANTS import (
     TB_Name_CALL_END_REASON,
 )
 from utils.sequence_diagram import generate_plantuml_sequence, render_plantuml
-from utils.log_analyzer import (
-    get_call_duration,
-    get_recent_healthcheck_counts,
-    get_srtp_error_count,
-    get_bye_reasons,
-    get_stopholepunching_code,
-    get_call_end_reasons,
-    get_capture_callback_count,
-    classify_sessions,
-)
+from utils.log_analyzer import *
 
 """
 TODO : 딥러닝 기반으로 로그 분석
@@ -52,7 +43,7 @@ def load_and_process(file):
     df["Resource Url"] = df["Resource Url"].str.replace(
         "https://aicall-lgu.com/", "", regex=False
     )
-    classify_sessions(df)
+    classify_sessions(df)  # CHECKLIST : 테스트 목적으로 추가하였으므로 삭제 필요
     return df
 
 
@@ -77,25 +68,17 @@ def display_call_analysis_table(df):
     df = filter_valid_call_ids(df)
 
     # call_id_info = get_call_id_info(df)
-    call_start_time = (
-        df[df["context.method"] == "INVITE"]
-        .groupby("context.callID")["timestamp"]
-        .first()
-        .dt.strftime("%m-%d %H:%M:%S")
-    )
+    call_start_time = get_call_start_time(df).first().dt.strftime("%m-%d %H:%M:%S")
     call_end_reasons = get_call_end_reasons(df)
     call_duration = get_call_duration(df).fillna("분석 불가")
     capture_callback_count = get_capture_callback_count(df).reindex(
         df["context.callID"].unique(), fill_value=0
     )
-
     first_rx_count = (
-        df[df["Resource Url"].str.contains("firstRx", na=False)]
-        .groupby("context.callID")
+        get_first_rx_count(df)
         .size()
         .reindex(df["context.callID"].unique(), fill_value=0)
     )
-
     healthcheck_series = get_recent_healthcheck_counts(df)  # 이미 1D로 반환됨
     stop_holepunching_code = get_stopholepunching_code(df)  # 이미 1D로 반환됨
     srtp_error_count = get_srtp_error_count(df).reindex(
@@ -117,9 +100,7 @@ def display_call_analysis_table(df):
         }
     )
 
-    """
-    테이블 강조 영역
-    """
+    # NOTE : 테이블 강조 영역
     # CaptureCallback 수가 3 이상인 경우
     styled_table = call_analysis_table.style.map(
         lambda x: "background-color: yellow" if isinstance(x, int) and x >= 3 else "",
@@ -168,9 +149,7 @@ def log_analysis_page():
     if uploaded_file is not None:
         df = load_and_process(uploaded_file)
 
-        """
-        사이드 바 영역
-        """
+        # NOTE : 사이드바 영역
         # 사이드바에서 원하는 열 선택
         st.sidebar.header("열 선택")
         columns_to_show = st.sidebar.multiselect(
@@ -216,15 +195,11 @@ def log_analysis_page():
             )
             filtered_df = filtered_df[condition]
 
-        """
-        통화 종료 분석 테이블 영역
-        """
+        # NOTE : 통화 종료 분석 테이블 영역
         with st.container(border=True):
             display_call_analysis_table(df)
 
-        """
-        필터링 된 데이터 영역
-        """
+        # NOTE : 필터링 된 데이터 영역
         with st.container(border=True):
             st.subheader(f":orange-background[*{TITLE_FILTERED_DATA}*]")
 
@@ -249,9 +224,7 @@ def log_analysis_page():
 
             st.write(time_filtered_df[columns_to_show])
 
-        """
-        기본 데이터 영역
-        """
+        # NOTE : 기본 데이터 영역
         with st.container(border=True):
             st.subheader(f":orange-background[*{TITLE_DEFAULT_DATA}*]")
             st.write(df[columns_to_show])

@@ -63,36 +63,6 @@ def classify_sessions(df):
 
 # TODO : Audio Session Routed 분석 추가
 
-# Call ID 기준으로 INVITE 가 포함되어 있는지, REGISTER 가 포함되어 있는지 확인
-# if INVITE 가 포함되어 있으면 return call
-# if REGISTER 가 포함되어 있으면 return register
-# if 둘 다 포함되어 있으면 return both
-# 그 외 return none
-# def get_call_id_info(df):
-#     # 각 callID에 대해 INVITE와 REGISTER 메시지 포함 여부 확인
-#     call_info = df.groupby('context.callID')['context.method'].apply(lambda x: {
-#         'INVITE': 'INVITE' in x.values,
-#         'REGISTER': 'REGISTER' in x.values
-#     })
-
-#     # 결과를 저장할 Series 생성
-#     result = pd.Series(index=call_info.index)
-
-#     for call_id, info in call_info.items():
-#         if isinstance(info, dict):  # info가 딕셔너리인지 확인
-#             if info['INVITE'] and info['REGISTER']:
-#                 result[call_id] = 'both'
-#             elif info['INVITE']:
-#                 result[call_id] = 'call'
-#             elif info['REGISTER']:
-#                 result[call_id] = 'register'
-#             else:
-#                 result[call_id] = 'none'
-#         else:
-#             result[call_id] = 'none'  # info가 딕셔너리가 아닐 경우 처리
-
-#     return result
-
 
 def get_call_duration(df, unmatched_value="매칭되지 않음"):
     """
@@ -313,3 +283,36 @@ def get_stopholepunching_code(df):
     )
 
     return stop_holepunching_code
+
+
+def get_call_start_time(df):
+    """가장 먼저 체크되는 INVITE 메시지의 시간
+
+    Args:
+        df (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    call_start_time = df[df["context.method"] == "INVITE"].groupby("context.callID")[
+        "timestamp"
+    ]
+
+    return call_start_time
+
+
+def get_first_rx_count(df):
+    """firstRx 개수 확인
+
+    Args:
+        df (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+
+    first_rx_count = df[df["Resource Url"].str.contains("firstRx", na=False)].groupby(
+        "context.callID"
+    )
+
+    return first_rx_count
