@@ -17,10 +17,25 @@ def load_and_process(file):
 
 
 def separate_message(df):
-    # TODO : 메시지를 "|" 기준으로 분리하기
-    # "date=2025-02-20 23:59:18.423|serverType=03|pid=3385231|logLevel=INFO|filename=thread/ThreadToIMSServerSender.h|line=198|callId=thhsdcyb-0-1-a009vCZsCDeMlVvsgik@ghgpkkklkjm|errorCode=40810300|fromCtn=[CTN_REMOVED]|toCtn=[CTN_REMOVED]|fromTag=kmnham6A0E0957793774942665|toTag=ONEAT1740063558189072170833852316cb1a5c3|calling=outGoing|method=408 Request Timeout|messageType=REQ|from=SIGNAL-172.31.178.112:5060|to=CSCF-10.113.127.14:5060|ip=10.113.127.14|port=5060|message=\rSIP/2.0 408 Request Timeout\rVia: SIP/2.0/UDP 10.113.127.14:5060;[BRANCH_REMOVED] <[CTN_REMOVED]@lte-lguplus.co.kr>;tag=kmnham6A0E0957793774942665\rTo: <[CTN_REMOVED];phone-context=lte-lguplus.co.kr>;tag=ONEAT1740063558189072170833852316cb1a5c3\rCall-ID: thhsdcyb-0-1-a009vCZsCDeMlVvsgik@ghgpkkklkjm\rCSeq: 9203 INVITE\rContact: <sip:172.31.178.112:5060>;+g.3gpp.icsi-ref=""urn%3Aurn-7%3A3gpp-service.ims.icsi.mmtel""\rMax-Forwards: 70\rContent-Length: 0\rReason: SIP;cause=99719408;text=""No Response 180 Ring""\r\r"
-    # date, serverType, pid, logLevel, filename, line, callId, errorCode 등 "=" 앞에 있는 것으로 "열 이름"화 하기
-    return
+    # 메시지를 "|" 기준으로 분리하기
+    if df["Message"] is not None:
+        messages = df["Message"].str.split("|", expand=True)
+
+        # 각 메시지에서 키-값 쌍을 "=" 기준으로 분리하여 열 이름으로 사용
+        for i in range(messages.shape[1]):
+            if messages[i].isnull().all():  # 모든 값이 NaN인 경우 건너뛰기
+                continue
+            key_value_pairs = messages[i].str.split("=", n=1, expand=True)
+            if key_value_pairs.shape[1] == 2:  # 키-값 쌍이 있는 경우
+                key = key_value_pairs[0].str.strip()  # 키에서 공백 제거
+                value = key_value_pairs[1].str.strip()  # 값에서 공백 제거
+                # DataFrame에 추가
+                df[key] = value
+
+    else:
+        st.toast(f"⚠️ 첨부된 파일에 Message 열이 없습니다.")
+
+    return df
 
 
 def display_table(df):
@@ -39,6 +54,7 @@ def log_analysis_page():
     if uploaded_file is not None:
 
         df = load_and_process(uploaded_file)
+        df = separate_message(df)
 
         # NOTE : Log 분석 페이지 사이드 바 영역
         st.sidebar.header("열 선택")
@@ -52,6 +68,14 @@ def log_analysis_page():
                 not in [
                     "Host",
                     "Service",
+                    "Message",
+                    "pid",
+                    "filename",
+                    "fromCtn",
+                    "toCtn",
+                    "fromTag",
+                    "toTag",
+                    "date",
                 ]
             ],
         )
@@ -81,12 +105,14 @@ def log_analysis_page():
 
         # NOTE : Log 분석 페이지 필터링 테이브
         with st.container(border=True):
-            st.write(filtered_df)
+            st.subheader(f":orange-background[*{TITLE_FILTERED_DATA}*]")
+            st.write(filtered_df[columns_to_show])
 
         # NOTE : Log 분석 페이지 기본 테이블
         with st.container(border=True):
-            # display_table(df)
-            st.write(df)
+            st.subheader(f":orange-background[*{TITLE_DEFAULT_DATA}*]")
+            with st.expander("펼치기", expanded=False):
+                st.write(df)
 
 
 if __name__ == "__main__":

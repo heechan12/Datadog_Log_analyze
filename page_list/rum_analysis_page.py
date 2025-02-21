@@ -43,7 +43,7 @@ def load_and_process(file):
     df["Resource Url"] = df["Resource Url"].str.replace(
         "https://aicall-lgu.com/", "", regex=False
     )
-    classify_sessions(df)  # CHECKLIST : 테스트 목적으로 추가하였으므로 삭제 필요
+    # classify_sessions(df)  # CHECKLIST : 테스트 목적으로 추가하였으므로 삭제 필요
     return df
 
 
