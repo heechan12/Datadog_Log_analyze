@@ -30,19 +30,30 @@ CHECKLIST : 변수명, 함수명 정리
 def load_and_process(file):
     # CSV 파일 읽고 시간 변환 및 URL 처리
     df = pd.read_csv(file)
-    df["timestamp"] = (
-        pd.to_datetime(df["timestamp"], format="%Y-%m-%dT%H:%M:%S.%fZ", errors="coerce")
-        .dt.tz_localize("UTC")
-        .dt.tz_convert("Asia/Seoul")
-    )
-    df["Date"] = (
-        pd.to_datetime(df["Date"], format="%Y-%m-%dT%H:%M:%S.%fZ", errors="coerce")
-        .dt.tz_localize("UTC")
-        .dt.tz_convert("Asia/Seoul")
-    )
-    df["Resource Url"] = df["Resource Url"].str.replace(
-        "https://aicall-lgu.com/", "", regex=False
-    )
+    if df["timestamp"] is not None:
+        df["timestamp"] = (
+            pd.to_datetime(
+                df["timestamp"], format="%Y-%m-%dT%H:%M:%S.%fZ", errors="coerce"
+            )
+            .dt.tz_localize("UTC")
+            .dt.tz_convert("Asia/Seoul")
+        )
+    else:
+        st.toast(f"⚠️ 첨부된 파일에 timestamp 열이 없습니다.")
+    if df["Date"] is not None:
+        df["Date"] = (
+            pd.to_datetime(df["Date"], format="%Y-%m-%dT%H:%M:%S.%fZ", errors="coerce")
+            .dt.tz_localize("UTC")
+            .dt.tz_convert("Asia/Seoul")
+        )
+    else:
+        st.toast(f"⚠️ 첨부된 파일에 Date 열이 없습니다.")
+    if df["Resource Url"] is not None:
+        df["Resource Url"] = df["Resource Url"].str.replace(
+            "https://aicall-lgu.com/", "", regex=False
+        )
+    else:
+        st.toast(f"⚠️ 첨부된 파일에 Resource Url 열이 없습니다.")
     # classify_sessions(df)  # CHECKLIST : 테스트 목적으로 추가하였으므로 삭제 필요
     return df
 
