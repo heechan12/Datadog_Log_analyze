@@ -10,7 +10,7 @@ from utils.CONSTANTS import (
     TB_Name_CALL_START_TIME,
     TB_Name_RECENT_HEALTH_CHECK,
     TB_Name_SRTP_ERROR,
-    PG_Name_LOG_ANALYSIS,
+    PG_Name_RUM_ANALYSIS,
     CSV_FILE_UPLOAD,
     TB_Name_STOP_HOLEPUNCHING_CODE,
     TITLE_BYE_REASON_ANALYSIS,
@@ -19,7 +19,7 @@ from utils.CONSTANTS import (
     TB_Name_CALL_END_REASON,
 )
 from utils.sequence_diagram import generate_plantuml_sequence, render_plantuml
-from utils.log_analyzer import *
+from utils.rum_analyzer import *
 
 """
 TODO : 딥러닝 기반으로 로그 분석
@@ -142,8 +142,8 @@ def display_call_analysis_table(df):
         st.text_area("시퀀스 다이어그램", diagram_content, height=400)
 
 
-def log_analysis_page():
-    st.title(PG_Name_LOG_ANALYSIS)
+def rum_analysis_page():
+    st.title(PG_Name_RUM_ANALYSIS)
 
     uploaded_file = st.file_uploader(CSV_FILE_UPLOAD, type=["csv"])
     if uploaded_file is not None:
@@ -231,4 +231,4 @@ def log_analysis_page():
 
 
 if __name__ == "__main__":
-    log_analysis_page()
+    rum_analysis_page()
