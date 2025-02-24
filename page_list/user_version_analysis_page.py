@@ -2,8 +2,13 @@ import streamlit as st
 import pandas as pd
 from streamlit_elements import mui, nivo, elements
 
-from utils.CONSTANTS import PG_Name_USER_VERSION, CSV_FILE_UPLOAD, TITLE_ANALYSIS_RESULT_PER_USER_ID, \
-    TITLE_ANALYSIS_RESULT_PER_APP_VERSION, TITLE_ANALYSIS_RESULT_PER_OS_VERSION
+from utils.CONSTANTS import (
+    PG_Name_USER_VERSION,
+    CSV_FILE_UPLOAD,
+    TITLE_ANALYSIS_RESULT_PER_USER_ID,
+    TITLE_ANALYSIS_RESULT_PER_APP_VERSION,
+    TITLE_ANALYSIS_RESULT_PER_OS_VERSION,
+)
 
 
 def load_and_process(file):
@@ -21,11 +26,13 @@ def user_version_analysis_page():
 
         # 전체 열의 개수 및 중복 제거된 User Id 수 계산 및 표시
         total_rows = len(df)
-        total_unique_users = df['User Id'].nunique() if 'User Id' in df.columns else 0
-        summary_table = pd.DataFrame({
-            '전체 행의 개수': [total_rows],
-            '중복 제거된 User Id 수': [total_unique_users]
-        })
+        total_unique_users = df["User Id"].nunique() if "User Id" in df.columns else 0
+        summary_table = pd.DataFrame(
+            {
+                "전체 행의 개수": [total_rows],
+                "중복 제거된 User Id 수": [total_unique_users],
+            }
+        )
         st.table(summary_table)
         # st.dataframe(summary_table)
 
@@ -34,10 +41,10 @@ def user_version_analysis_page():
         with user_id_col:
             # User Id 별 개수 분석
             st.subheader(f":orange-background[*{TITLE_ANALYSIS_RESULT_PER_USER_ID}*]")
-            if 'User Id' in df.columns:
-                user_counts = df['User Id'].value_counts().reset_index()
-                total_unique_users = df['User Id'].nunique()
-                user_counts.columns = ['User Id', '개수']
+            if "User Id" in df.columns:
+                user_counts = df["User Id"].value_counts().reset_index()
+                total_unique_users = df["User Id"].nunique()
+                user_counts.columns = ["User Id", "개수"]
                 top_10_users = user_counts.head(10)
                 st.table(top_10_users)
 
@@ -49,11 +56,16 @@ def user_version_analysis_page():
 
         with app_version_col:
             # 앱 버전 별 개수 분석
-            st.subheader(f":orange-background[*{TITLE_ANALYSIS_RESULT_PER_APP_VERSION}*]")
-            if 'Version' in df.columns:
-                app_version_counts = df['Version'].value_counts().reset_index()
-                app_version_data = [{"app_version": version} for version in app_version_counts['Version']]
-                app_version_counts.columns = ['버전', '개수']
+            st.subheader(
+                f":orange-background[*{TITLE_ANALYSIS_RESULT_PER_APP_VERSION}*]"
+            )
+            if "Version" in df.columns:
+                app_version_counts = df["Version"].value_counts().reset_index()
+                app_version_data = [
+                    {"app_version": version}
+                    for version in app_version_counts["Version"]
+                ]
+                app_version_counts.columns = ["버전", "개수"]
                 st.table(app_version_counts)
 
                 print(app_version_data)
@@ -67,10 +79,12 @@ def user_version_analysis_page():
                 st.warning("Version 열이 없습니다.")
 
         with os_version_col:
-            st.subheader(f":orange-background[*{TITLE_ANALYSIS_RESULT_PER_OS_VERSION}*]")
+            st.subheader(
+                f":orange-background[*{TITLE_ANALYSIS_RESULT_PER_OS_VERSION}*]"
+            )
             if "OS Version" in df.columns:
-                os_version_counts = df['OS Version'].value_counts().reset_index()
-                os_version_counts.columns = ['버전', '개수']
+                os_version_counts = df["OS Version"].value_counts().reset_index()
+                os_version_counts.columns = ["버전", "개수"]
                 st.table(os_version_counts)
                 # st.bar_chart(version_counts.set_index('버전')['개수'])
             else:
