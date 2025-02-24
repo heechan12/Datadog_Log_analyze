@@ -5,6 +5,7 @@ from datetime import timedelta
 from utils.CONSTANTS import *
 
 
+@st.cache_data
 def load_and_process(file):
     # CSV 파일 읽고 시간 변환 및 URL 처리
     df = pd.read_csv(file)
