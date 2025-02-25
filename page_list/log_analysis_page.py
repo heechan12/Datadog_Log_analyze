@@ -5,7 +5,6 @@ from datetime import timedelta
 from utils.CONSTANTS import *
 
 
-@st.cache_data
 def load_and_process(file):
     # CSV 파일 읽고 시간 변환 및 URL 처리
     df = pd.read_csv(file)
@@ -19,10 +18,11 @@ def load_and_process(file):
 
 def separate_message(df):
     # 메시지를 "|" 기준으로 분리하기
-    if df["Message"] is not None:
+    if "Message" in df.columns:
         messages = df["Message"].str.split("|", expand=True)
 
         # 각 메시지에서 키-값 쌍을 "=" 기준으로 분리하여 열 이름으로 사용
+        extracted_data = {}
         for i in range(messages.shape[1]):
             if messages[i].isnull().all():  # 모든 값이 NaN인 경우 건너뛰기
                 continue
@@ -30,11 +30,17 @@ def separate_message(df):
             if key_value_pairs.shape[1] == 2:  # 키-값 쌍이 있는 경우
                 key = key_value_pairs[0].str.strip()  # 키에서 공백 제거
                 value = key_value_pairs[1].str.strip()  # 값에서 공백 제거
-                # DataFrame에 추가
-                df[key] = value
+
+                # 고유한 키 값으로 새로운 컬럼 생성
+                unique_key = key.mode()[0] if not key.mode().empty else f"Unknown_{i}"
+                extracted_data[unique_key] = value
+
+        # 분리된 데이터를 기존 데이터프레임에 추가
+        extracted_df = pd.DataFrame(extracted_data)
+        df = pd.concat([df.drop(columns=["Message"]), extracted_df], axis=1)
 
     else:
-        st.toast(f"⚠️ 첨부된 파일에 Message 열이 없습니다.")
+        print("⚠️ 첨부된 파일에 Message 열이 없습니다.")
 
     return df
 
