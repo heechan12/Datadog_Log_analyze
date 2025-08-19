@@ -27,7 +27,7 @@ with st.sidebar:
         menu_icon="signpost-split",
         default_index=0,
     )
-    st.caption("1.3.3. 최적화")
+    st.caption("1.6.0. 대응 중")
     st.caption("지속 수정 중입니다.")
 
 # 페이지 선택에 따라 다른 페이지 호출

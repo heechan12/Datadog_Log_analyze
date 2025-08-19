@@ -28,9 +28,26 @@ CHECKLIST : 변수명, 함수명 정리
 
 
 def load_and_process(file):
-    # CSV 파일 읽고 시간 변환 및 URL 처리
     df = pd.read_csv(file)
-    if df["timestamp"] is not None:
+
+    # 필수 열 검사
+    if "Resource Url" not in df.columns:
+        st.error("오류: 필수 열인 'Resource Url'이 파일에 없습니다. 분석을 중단합니다.")
+        return None
+
+    call_id_cols = ['context.callID', 'context.callId', 'context.callUniqueId']
+    if not any(col in df.columns for col in call_id_cols):
+        st.error(f"오류: Call ID 관련 열({', '.join(call_id_cols)}) 중 하나 이상이 파일에 필요합니다. 분석을 중단합니다.")
+        return None
+
+    # 권장 열 검사
+    if "version" not in df.columns:
+        st.warning("경고: 권장 열인 'version'이 없습니다. 앱 버전별 분석이 제한될 수 있습니다.")
+
+    # Call ID 통합 및 데이터 처리
+    df = unify_call_id(df)
+
+    if "timestamp" in df.columns:
         df["timestamp"] = (
             pd.to_datetime(
                 df["timestamp"], format="%Y-%m-%dT%H:%M:%S.%fZ", errors="coerce"
@@ -39,22 +56,21 @@ def load_and_process(file):
             .dt.tz_convert("Asia/Seoul")
         )
     else:
-        st.toast(f"⚠️ 첨부된 파일에 timestamp 열이 없습니다.")
-    if df["Date"] is not None:
+        st.toast("⚠️ 첨부된 파일에 timestamp 열이 없습니다.")
+
+    if "Date" in df.columns:
         df["Date"] = (
             pd.to_datetime(df["Date"], format="%Y-%m-%dT%H:%M:%S.%fZ", errors="coerce")
             .dt.tz_localize("UTC")
             .dt.tz_convert("Asia/Seoul")
         )
     else:
-        st.toast(f"⚠️ 첨부된 파일에 Date 열이 없습니다.")
-    if df["Resource Url"] is not None:
-        df["Resource Url"] = df["Resource Url"].str.replace(
-            "https://aicall-lgu.com/", "", regex=False
-        )
-    else:
-        st.toast(f"⚠️ 첨부된 파일에 Resource Url 열이 없습니다.")
-    # classify_sessions(df)  # CHECKLIST : 테스트 목적으로 추가하였으므로 삭제 필요
+        st.toast("⚠️ 첨부된 파일에 Date 열이 없습니다.")
+
+    df["Resource Url"] = df["Resource Url"].str.replace(
+        "https://aicall-lgu.com/", "", regex=False
+    )
+
     return df
 
 
@@ -160,85 +176,86 @@ def rum_analysis_page():
     if uploaded_file is not None:
         df = load_and_process(uploaded_file)
 
-        # NOTE : 사이드바 영역
-        # 사이드바에서 원하는 열 선택
-        st.sidebar.header("열 선택")
-        columns_to_show = st.sidebar.multiselect(
-            "보고 싶은 열을 선택하세요",
-            df.columns.tolist(),
-            default=[
-                col
-                for col in df.columns
-                if col
-                not in [
-                    "has_replay",
-                    "status",
-                    "timestamp",
-                    "View name",
-                    "Resource Duration",
-                    "Resource Size",
-                    "Resource Status",
+        if df is not None:
+            # NOTE : 사이드바 영역
+            # 사이드바에서 원하는 열 선택
+            st.sidebar.header("열 선택")
+            columns_to_show = st.sidebar.multiselect(
+                "보고 싶은 열을 선택하세요",
+                df.columns.tolist(),
+                default=[
+                    col
+                    for col in df.columns
+                    if col
+                    not in [
+                        "has_replay",
+                        "status",
+                        "timestamp",
+                        "View name",
+                        "Resource Duration",
+                        "Resource Size",
+                        "Resource Status",
+                    ]
+                ],
+            )
+
+            # 필터링 옵션
+            st.sidebar.header("필터")
+            filter_condition = st.sidebar.radio("필터 조건", ["AND", "OR"])
+            filtered_df = df.copy()
+            filters = []
+
+            for col in columns_to_show:
+                unique_values = df[col].dropna().unique()
+                if len(unique_values) > 0 and df[col].dtype == "object":
+                    selected_values = st.sidebar.multiselect(f"{col} 선택", unique_values)
+                    if selected_values:
+                        if filter_condition == "AND":
+                            filters.append(filtered_df[col].isin(selected_values))
+                        else:
+                            filters.append(filtered_df[col].isin(selected_values))
+
+            if filters:
+                condition = (
+                    pd.concat(filters, axis=1).all(axis=1)
+                    if filter_condition == "AND"
+                    else pd.concat(filters, axis=1).any(axis=1)
+                )
+                filtered_df = filtered_df[condition]
+
+            # NOTE : 통화 종료 분석 테이블 영역
+            with st.container(border=True):
+                display_call_analysis_table(df)
+
+            # NOTE : 필터링 된 데이터 영역
+            with st.container(border=True):
+                st.subheader(f":orange-background[*{TITLE_FILTERED_DATA}*]")
+
+                # 시간 필터링 위젯 추가
+                min_time = filtered_df["timestamp"].min().to_pydatetime()
+                max_time = filtered_df["timestamp"].max().to_pydatetime()
+
+                time_range = st.slider(
+                    "시간 범위 선택",
+                    min_value=min_time,
+                    max_value=max_time,
+                    value=(min_time, max_time),
+                    step=timedelta(minutes=1),
+                    format="YYYY-MM-DD HH:mm",
+                )
+
+                # 시간 필터링 적용
+                time_filtered_df = filtered_df[
+                    (filtered_df["timestamp"] >= time_range[0])
+                    & (filtered_df["timestamp"] <= time_range[1])
                 ]
-            ],
-        )
 
-        # 필터링 옵션
-        st.sidebar.header("필터")
-        filter_condition = st.sidebar.radio("필터 조건", ["AND", "OR"])
-        filtered_df = df.copy()
-        filters = []
+                st.write(time_filtered_df[columns_to_show])
 
-        for col in columns_to_show:
-            unique_values = df[col].dropna().unique()
-            if len(unique_values) > 0 and df[col].dtype == "object":
-                selected_values = st.sidebar.multiselect(f"{col} 선택", unique_values)
-                if selected_values:
-                    if filter_condition == "AND":
-                        filters.append(filtered_df[col].isin(selected_values))
-                    else:
-                        filters.append(filtered_df[col].isin(selected_values))
-
-        if filters:
-            condition = (
-                pd.concat(filters, axis=1).all(axis=1)
-                if filter_condition == "AND"
-                else pd.concat(filters, axis=1).any(axis=1)
-            )
-            filtered_df = filtered_df[condition]
-
-        # NOTE : 통화 종료 분석 테이블 영역
-        with st.container(border=True):
-            display_call_analysis_table(df)
-
-        # NOTE : 필터링 된 데이터 영역
-        with st.container(border=True):
-            st.subheader(f":orange-background[*{TITLE_FILTERED_DATA}*]")
-
-            # 시간 필터링 위젯 추가
-            min_time = filtered_df["timestamp"].min().to_pydatetime()
-            max_time = filtered_df["timestamp"].max().to_pydatetime()
-
-            time_range = st.slider(
-                "시간 범위 선택",
-                min_value=min_time,
-                max_value=max_time,
-                value=(min_time, max_time),
-                step=timedelta(minutes=1),
-                format="YYYY-MM-DD HH:mm",
-            )
-
-            # 시간 필터링 적용
-            time_filtered_df = filtered_df[
-                (filtered_df["timestamp"] >= time_range[0])
-                & (filtered_df["timestamp"] <= time_range[1])
-            ]
-
-            st.write(time_filtered_df[columns_to_show])
-
-        # NOTE : 기본 데이터 영역
-        with st.container(border=True):
-            st.subheader(f":orange-background[*{TITLE_DEFAULT_DATA}*]")
-            st.write(df[columns_to_show])
+            # NOTE : 기본 데이터 영역
+            with st.container(border=True):
+                st.subheader(f":orange-background[*{TITLE_DEFAULT_DATA}*]")
+                st.write(df[columns_to_show])
 
 
 if __name__ == "__main__":
