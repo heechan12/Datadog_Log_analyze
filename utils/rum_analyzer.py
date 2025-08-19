@@ -316,3 +316,30 @@ def get_first_rx_count(df):
     )
 
     return first_rx_count
+
+
+def unify_call_id(df):
+    """
+    callId, callID, callUniqueId 등 다양한 Call ID 필드를 'context.callID'로 통합합니다.
+    """
+    # 통합할 Call ID 열 목록
+    id_cols = ['context.callID', 'context.callId', 'context.callUniqueId']
+    # DataFrame에 실제로 존재하는 Call ID 열만 필터링
+    present_id_cols = [col for col in id_cols if col in df.columns]
+
+    # 통합할 Call ID 열이 없으면 원본 DataFrame을 그대로 반환
+    if not present_id_cols:
+        return df
+
+    # 존재하는 Call ID 열들을 통합(coalesce)하여 하나의 시리즈로 만듭니다.
+    # present_id_cols의 첫 번째 열을 기준으로 시작합니다.
+    unified_series = df[present_id_cols[0]].copy()
+    # 나머지 열들을 순회하며 NaN 값을 채워나갑니다.
+    for i in range(1, len(present_id_cols)):
+        unified_series = unified_series.fillna(df[present_id_cols[i]])
+
+    # 통합된 시리즈를 표준 'context.callID' 열에 할당합니다.
+    # 이렇게 하면 이후의 모든 분석 함수가 일관된 필드를 참조할 수 있습니다.
+    df['context.callID'] = unified_series
+        
+    return df
