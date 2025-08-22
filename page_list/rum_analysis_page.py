@@ -41,8 +41,8 @@ def load_and_process(file):
         return None
 
     # 권장 열 검사
-    if "version" not in df.columns:
-        st.warning("경고: 권장 열인 'version'이 없습니다. 앱 버전별 분석이 제한될 수 있습니다.")
+    if "Version" not in df.columns:
+        st.warning("경고: 권장 열인 'Version'이 없습니다. 앱 버전별 분석이 제한될 수 있습니다.")
 
     # Call ID 통합 및 데이터 처리
     df = unify_call_id(df)
@@ -114,6 +114,9 @@ def display_call_analysis_table(df):
     # bye_reasons = get_bye_reasons(df).reindex(call_duration.index, fill_value='없음')
 
     # DataFrame 생성 시 모든 데이터를 1D로 보장
+    # Todo : 앱 버전을 체크해서 테이블 출력 형태를 구분
+        # 1.6.0 미만 또는 default의 경우 아래의 테이블과 동일
+        # 1.6.0 이상은 srtp_error_coumt, stop_holepunching 부분은 빼고 STOPPING 쪽을 표현.
     call_analysis_table = pd.DataFrame(
         {
             TB_Name_CALL_START_TIME: call_start_time,
@@ -152,8 +155,6 @@ def display_call_analysis_table(df):
     )
 
     # NOTE : Table 출력 부분
-    # st.write(call_analysis_table)
-    # st.write(styled_table)
     st.dataframe(styled_table)
 
     # Call Flow 분석
@@ -250,7 +251,43 @@ def rum_analysis_page():
                     & (filtered_df["timestamp"] <= time_range[1])
                 ]
 
-                st.write(time_filtered_df[columns_to_show])
+                # 하이라이트 기능 추가
+                highlight_toggle = st.toggle("하이라이트", key="highlight_toggle")
+                highlight_words_str = ""
+                if highlight_toggle:
+                    highlight_words_str = st.text_input(
+                        "하이라이트할 단어를 쉼표(,)로 구분하여 입력하세요.",
+                        key="highlight_words",
+                    )
+
+                if highlight_toggle and highlight_words_str:
+                    highlight_words = [
+                        word.strip()
+                        for word in highlight_words_str.split(",")
+                        if word.strip()
+                    ]
+                    if highlight_words:
+
+                        def highlight_rows(row):
+                            is_present = any(
+                                word.lower() in str(cell).lower()
+                                for word in highlight_words
+                                for cell in row
+                            )
+                            return (
+                                ["background-color: yellow"] * len(row)
+                                if is_present
+                                else [""] * len(row)
+                            )
+
+                        styled_df = time_filtered_df[columns_to_show].style.apply(
+                            highlight_rows, axis=1
+                        )
+                        st.dataframe(styled_df)
+                    else:
+                        st.dataframe(time_filtered_df[columns_to_show])
+                else:
+                    st.dataframe(time_filtered_df[columns_to_show])
 
             # NOTE : 기본 데이터 영역
             with st.container(border=True):
