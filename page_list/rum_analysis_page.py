@@ -111,24 +111,38 @@ def display_call_analysis_table(df):
     srtp_error_count = get_srtp_error_count(df).reindex(
         call_duration.index, fill_value=0
     )
-    # bye_reasons = get_bye_reasons(df).reindex(call_duration.index, fill_value='없음')
+
 
     # DataFrame 생성 시 모든 데이터를 1D로 보장
     # Todo : 앱 버전을 체크해서 테이블 출력 형태를 구분
         # 1.6.0 미만 또는 default의 경우 아래의 테이블과 동일
         # 1.6.0 이상은 srtp_error_coumt, stop_holepunching 부분은 빼고 STOPPING 쪽을 표현.
-    call_analysis_table = pd.DataFrame(
-        {
-            TB_Name_CALL_START_TIME: call_start_time,
-            TB_Name_CALL_END_REASON: call_end_reasons,
-            TB_Name_CAPTURE_CALLBACK: capture_callback_count,
-            TB_Name_FIRST_RX: first_rx_count,
-            TB_Name_CALL_DURATION: call_duration.astype(str),
-            TB_Name_RECENT_HEALTH_CHECK: healthcheck_series.astype(str),
-            TB_Name_SRTP_ERROR: srtp_error_count.astype(int),
-            TB_Name_STOP_HOLEPUNCHING_CODE: stop_holepunching_code.astype(str),
-        }
-    )
+    app_version = get_app_version(df)
+    if (app_version[0] >= 1 and app_version[1] >= 6) :
+        call_analysis_table = pd.DataFrame(
+            {
+                TB_Name_CALL_START_TIME: call_start_time,
+                TB_Name_CALL_END_REASON: call_end_reasons,
+                TB_Name_CAPTURE_CALLBACK: capture_callback_count,
+                TB_Name_FIRST_RX: first_rx_count,
+                TB_Name_CALL_DURATION: call_duration.astype(str),
+                TB_Name_RECENT_HEALTH_CHECK: healthcheck_series.astype(str),
+            }
+        )
+
+    else :
+        call_analysis_table = pd.DataFrame(
+            {
+                TB_Name_CALL_START_TIME: call_start_time,
+                TB_Name_CALL_END_REASON: call_end_reasons,
+                TB_Name_CAPTURE_CALLBACK: capture_callback_count,
+                TB_Name_FIRST_RX: first_rx_count,
+                TB_Name_CALL_DURATION: call_duration.astype(str),
+                TB_Name_RECENT_HEALTH_CHECK: healthcheck_series.astype(str),
+                TB_Name_SRTP_ERROR: srtp_error_count.astype(int),
+                TB_Name_STOP_HOLEPUNCHING_CODE: stop_holepunching_code.astype(str),
+            }
+        )
 
     # NOTE : 테이블 강조 영역
     # CaptureCallback 수가 3 이상인 경우
@@ -223,6 +237,9 @@ def rum_analysis_page():
                     else pd.concat(filters, axis=1).any(axis=1)
                 )
                 filtered_df = filtered_df[condition]
+
+            # NOTE : 앱 버전 출력
+            st.write("App Version : " + str(get_app_version(df)[0]) + "." + str(get_app_version(df)[1]) + "." + str(get_app_version(df)[2]))
 
             # NOTE : 통화 종료 분석 테이블 영역
             with st.container(border=True):

@@ -343,3 +343,31 @@ def unify_call_id(df):
     df['context.callID'] = unified_series
         
     return df
+
+def get_app_version(df):
+    """
+    "Version" 열을 읽어서 해당 값을 리턴하는 함수
+    만약 값이 없다면 [0,0,0] return
+    :param df:
+    :return: app_version: [major, minor, patch]
+    """
+    if "Version" not in df.columns:
+        return [0, 0, 0]
+
+    # 'Version' 열에서 NaN이 아닌 첫 번째 값을 찾음
+    version_series = df["Version"].dropna()
+    if version_series.empty:
+        return [0, 0, 0]
+
+    first_version_str = version_series.iloc[0]
+
+    try:
+        # 버전 문자열을 '.' 기준으로 분리하고 정수로 변환
+        version_parts = [int(part) for part in first_version_str.split('.')]
+        # major, minor, patch 형식에 맞게 3자리로 맞춤 (부족하면 0으로 채움)
+        while len(version_parts) < 3:
+            version_parts.append(0)
+        return version_parts[:3]
+    except (ValueError, AttributeError):
+        # 정수 변환 실패 또는 분리 실패 시 기본값 반환
+        return [0, 0, 0]
